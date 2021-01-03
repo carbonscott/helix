@@ -8,7 +8,6 @@ sys.path.insert(0, "..")
 import pyrotein as pr
 import numpy as np
 import helix
-import line
 
 # Read the PDB file...
 fl_pdb    = "1gzm.pdb"
@@ -26,7 +25,7 @@ peptide = ["CA"]
 xyzs = pr.atom.extract_xyz(peptide, atom_dict, chain, nterm, cterm)
 
 # Find the good segment...
-helixlen = 10
+helixlen = 20
 bindex, result = helix.protein_fit_by_length(xyzs, helixlen)
 helix.report_params(result.params, title = f"Optimal params:" + \
                                            f"cost = {result.cost}")

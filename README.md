@@ -10,3 +10,7 @@ pip install git+https://github.com/carbonscott/helix.git --upgrade --user
 ```
 pip install git+https://github.com/lmfit/lmfit-py.git --upgrade --user
 ```
+
+## Demo image (Fit a helix to data)
+
+![](./examples/demo.png)
