@@ -96,13 +96,13 @@ def residual(params, xyzs):
     return res.reshape(-1)
 
 
-def residual_peptide(params, xyz_dict):
+def residual_peptide(params, xyzs_dict):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
     rN, rCA, rC, rO                  = parvals[8:8+4]
-    phiN, phiCA, phiC, phiO          = parvals[8:8+4]
-    tN, tCA, tC, tO                  = parvals[8:8+4]
+    phiN, phiCA, phiC, phiO          = parvals[12:12+4]
+    tN, tCA, tC, tO                  = parvals[16:16+4]
 
     # Construct paramters for each atom...
     parval_dict = {}
@@ -118,13 +118,13 @@ def residual_peptide(params, xyz_dict):
 
     # Computation for each type of atom...
     for i in xyzs_dict.keys():
-        num_dict[i]  = xyz_dict[i].shape[0]
+        num_dict[i]  = xyzs_dict[i].shape[0]
 
         # Avoid np.nan as the first valid point
-        xyzs_nonan_dict[i] = xyz_dict[i][~np.isnan(xyz_dict[i]).any(axis = 1)]
+        xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
 
         # Compute...
-        res = helix(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) - xyz_dict[i]
+        res = helix(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) - xyzs_dict[i]
         res_dict[i] = res
 
     # Format results for minimization...
@@ -140,12 +140,12 @@ def residual_peptide(params, xyz_dict):
     return res_matrix.reshape(-1)
 
 
-def fit_peptide(params, xyz_dict, **kwargs):
+def fit_peptide(params, xyzs_dict, **kwargs):
     result = lmfit.minimize(residual_peptide, 
                             params, 
                             method     = 'least_squares', 
                             nan_policy = 'omit',
-                            args       = (xyz_dict, ), 
+                            args       = (xyzs_dict, ), 
                             **kwargs)
     return result
 
@@ -160,111 +160,149 @@ def fit(params, xyzs, **kwargs):
     return result
 
 
-def peptide(xyz_dict):
+def peptide(xyzs_dict):
     ''' Fit a helix to amino acid according to input atomic positions.
     '''
     # Predefined helix parameters for amino acid...
-    s     = 5.5
-    omega = 1.7
-    rN, rCA, rC, rO = 1.6, 1.6, 1.6, 1.6
-    phiN, phiCA, phiC, phiO = np.pi + omega, np.pi + omega, np.pi + omega, np.pi + omega
+    s     = 5.5                  # pitch size of an alpha helix
+    omega = 100 / 180 * np.pi    # 100 degree turn per residue
 
-    # Avoid nan when estimating t
-    t = {}
-    for i in xyzs_dict.keys():
-        xyzs_nonan_dict[i] = xyz_dict[i][~np.isnan(xyz_dict[i]).any(axis = 1)]
-        t[i] = - 0.5 * np.linalg.norm(xyzs_nonan_dict[i][-1] - xyzs_nonan_dict[i][0])
-    tN  = t["N"]
-    tCA = t["CA"]
-    tC  = t["C"]
-    tO  = t["O"]
+    # Predefine radius and phase offset
+    r, phi = {}, {}
+    r["N"] = 1.458    # Obtained from results of fitting N alone
+    r["CA"] = 2.27
+    r["C"] = 1.729
+    r["O"] = 2.051
+    phi["N"] = 4.85
+    phi["CA"] = 4.98
+    phi["C"] = 5.16
+    phi["O"] = 5.152
 
-    # Define init_values...
-    # Assume helix axis passes through the average position of a straight helix
-    ####
-    ###  TODO: how to assign different t value so that each chain has a
-    ###  different center
-    ###
-    ###  TODO: complete this scenario
-    ####
-    px, py, pz = np.nanmean(xyzs, axis = 0)
-
-    # Estimate the helix axis vector...
-    nv = estimate_axis(xyzs)
+    # Define init_values
+    # Estimate the mean helix axis...
+    nv_dict = {}
+    for i in xyzs_dict.keys(): nv_dict[i] = estimate_axis(xyzs_dict[i])
+    nv_array = np.array( [ v for v in nv_dict.values() ] )
+    nv = np.nanmean(nv_array, axis = 0)
     nx, ny, nz = nv
+
+    # Estimate the mean position that the axis of helix passes through...
+    pv_dict = {}
+    for i in xyzs_dict.keys(): pv_dict[i] = np.nanmean(xyzs_dict[i], axis = 0)
+    pv_array = np.array( [ v for v in pv_dict.values() ] )
+    pv = np.nanmean(pv_array, axis = 0)
+    px, py, pz = pv
+
+    # Predefine axial translational offset
+    t = {}
+    xyzs_nonan_dict = {}
+    for i in xyzs_dict.keys():
+        xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
+        t[i] = - np.linalg.norm(pv - xyzs_nonan_dict[i][0])
 
     # Init params...
     params = init_params()
 
     # Load init values
-    params.add("px",    value = px)
-    params.add("py",    value = py)
-    params.add("pz",    value = pz)
-    params.add("nx",    value = nx)
-    params.add("ny",    value = ny)
-    params.add("nz",    value = nz)
-    params.add("s" ,    value = s)
+    params.add("px"   , value = px)
+    params.add("py"   , value = py)
+    params.add("pz"   , value = pz)
+    params.add("nx"   , value = nx)
+    params.add("ny"   , value = ny)
+    params.add("nz"   , value = nz)
+    params.add("s"    , value = s)
     params.add("omega", value = omega)
-    params.add("r" ,    value = r)
-    params.add("phi",   value = phi)
-    params.add("t",     value = t)
+    params.add("rN"   , value = r["N"])
+    params.add("rCA"  , value = r["CA"])
+    params.add("rC"   , value = r["C"])
+    params.add("rO"   , value = r["C"])
+    params.add("phiN" , value = phi["N"])
+    params.add("phiCA", value = phi["CA"])
+    params.add("phiC" , value = phi["C"])
+    params.add("phiO" , value = phi["O"])
+    params.add("tN"   , value = t["N"])
+    params.add("tCA"  , value = t["CA"])
+    params.add("tC"   , value = t["C"])
+    params.add("tO"   , value = t["O"])
 
+    report_params_peptide(params, title = f"Init report")
+
+    # Fitting process...
     # Set constraints...
     for i in params.keys(): params[i].set(vary = False)
 
-    # Fitting process...
-    report_params(params, title = f"Init report")
-
     for i in ["px", "py", "pz"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"px, py, pz: " + \
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
-    for i in ["phi"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"phi: " + \
+    for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"s, omega: " + \
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
-    for i in ["t"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"t: " + \
+    for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
-    for i in ["r"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"r: " + \
+    for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"nx, ny, nz: " + \
+    result = fit_peptide(params, xyzs_dict)
+    report_params_peptide(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in range(5):
-        result = fit(params, xyzs, ftol = 1e-9)
-        report_params(params, title = f"All params: " + \
+        result = fit_peptide(params, xyzs_dict, ftol = 1e-9)
+        report_params_peptide(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
                                       f"cost = {result.cost}")
         params = result.params
 
     return result
+
+
+def check_fit_peptide(params, xyzs_dict, pv0, nv0, nterm):
+    # Unpack parameters...
+    parvals = unpack_params(params)
+    px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
+    rN, rCA, rC, rO                  = parvals[8:8+4]
+    phiN, phiCA, phiC, phiO          = parvals[12:12+4]
+    tN, tCA, tC, tO                  = parvals[16:16+4]
+
+    # Construct paramters for each atom...
+    parval_dict = {}
+    parval_dict["N"]  = px, py, pz, nx, ny, nz, s, omega, rN,  phiN,  tN
+    parval_dict["CA"] = px, py, pz, nx, ny, nz, s, omega, rCA, phiCA, tCA
+    parval_dict["C"]  = px, py, pz, nx, ny, nz, s, omega, rC,  phiC,  tC
+    parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
+
+    for i in xyzs_dict.keys():
+        print(f"Check {i}")
+        check_fit(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm)
+
+    return None
 
 
 def protein(xyzs):
@@ -276,17 +314,18 @@ def protein(xyzs):
     r             = 1.6
     phi           = np.pi + omega
 
-    # Avoid nan when estimating t
-    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
-    t = - 0.5 * np.linalg.norm(xyzs_nonan[-1] - xyzs_nonan[0])
-
     # Define init_values...
     # Assume helix axis passes through the average position of a straight helix
-    px, py, pz = np.nanmean(xyzs, axis = 0)
+    pv = np.nanmean(xyzs, axis = 0)
+    px, py, pz = pv
 
     # Estimate the helix axis vector...
     nv = estimate_axis(xyzs)
     nx, ny, nz = nv
+
+    # Avoid nan when estimating t
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+    t = - np.linalg.norm(pv - xyzs_nonan[0])
 
     # Init params...
     params = init_params()
@@ -377,10 +416,10 @@ def protein_fit_by_length(xyzs, helixlen):
     return sorted_results[0]
 
 
-def check_fit(params, xyzs, pv0, nv0, nterm):
+def check_fit(parvals, xyzs, pv0, nv0, nterm):
     # Generate the helix...
     xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
-    parvals = unpack_params(params)
+    ## parvals = unpack_params(params)
     q = helix(parvals, xyzs.shape[0], xyzs_nonan[0])
 
     # Unpack parameters...
@@ -492,6 +531,43 @@ def check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen):
 
     return None
 
+
+def report_params_peptide(params, title = ""):
+    # Unpack parameters...
+    px    = params["px"   ].value
+    py    = params["py"   ].value
+    pz    = params["pz"   ].value
+    nx    = params["nx"   ].value
+    ny    = params["ny"   ].value
+    nz    = params["nz"   ].value
+    s     = params["s"    ].value
+    omega = params["omega"].value
+    rN    = params["rN"   ].value
+    rCA   = params["rCA"  ].value
+    rC    = params["rC"   ].value
+    rO    = params["rO"   ].value
+    phiN  = params["phiN" ].value
+    phiCA = params["phiCA"].value
+    phiC  = params["phiC" ].value
+    phiO  = params["phiO" ].value
+    tN    = params["tN"   ].value
+    tCA   = params["tCA"  ].value
+    tC    = params["tC"   ].value
+    tO    = params["tO"   ].value
+
+    print(f"{title}")
+    print(f"params                   value(s)")
+    print(f"----------               --------")
+    print(f"px, py, pz:              {px:<10.3f}    {py:<10.3f}    {pz:<10.3f}")
+    print(f"nx, ny, xz:              {nx:<10.3f}    {ny:<10.3f}    {nz:<10.3f}")
+    print(f"s:                       {s:<10.3f}")
+    print(f"omega:                   {omega:<10.3f}")
+    print(f"rN, rCA, rC, rO:         {rN:<10.3f}    {rCA:<10.3f}    {rC:<10.3f}    {rO:<10.3f}")
+    print(f"phiN, phiCA, phiC, phiO: {phiN:<10.3f}    {phiCA:<10.3f}    {phiC:<10.3f}    {phiO:<10.3f}")
+    print(f"tN, tCA, tC, tO:         {tN:<10.3f}    {tCA:<10.3f}    {tC:<10.3f}    {tO:<10.3f}")
+    print("")
+
+    return None
 
 
 def report_params(params, title = ""):
