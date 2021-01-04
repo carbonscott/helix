@@ -3,7 +3,7 @@
 
 import sys
 sys.path.insert(0, "..")
-sys.path.insert(0, "/home/scott/Dropbox/codes/helix")
+## sys.path.insert(0, "/home/scott/Dropbox/codes/helix")
 
 import pyrotein as pr
 import numpy as np
