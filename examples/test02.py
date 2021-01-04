@@ -21,11 +21,11 @@ cterm = 183
 
 # Obtain coordinates...
 ## peptide = ["N", "CA", "C", "O"]
-peptide = ["CA"]
+peptide = ["O"]
 xyzs = pr.atom.extract_xyz(peptide, atom_dict, chain, nterm, cterm)
 
 # Find the good segment...
-helixlen = 20
+helixlen = 18
 bindex, result = helix.protein_fit_by_length(xyzs, helixlen)
 helix.report_params(result.params, title = f"Optimal params:" + \
                                            f"cost = {result.cost}")

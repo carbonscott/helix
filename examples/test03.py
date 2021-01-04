@@ -44,4 +44,5 @@ params = result.params
 
 # Check...
 ## helix.check_fit(params, xyzs[bindex:bindex+helixlen], pv0, nv0)
-helix.check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen)
+parvals = helix.unpack_params(params)
+helix.check_select(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen)
