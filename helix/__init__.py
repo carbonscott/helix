@@ -11,6 +11,7 @@ import numpy as np
 
 
 def init_params(): return lmfit.Parameters()
+def unpack_params(params): return [ v.value  for _, v in params.items() ]
 
 
 def bisector(xyz1, xyz2, xyz3):
@@ -40,23 +41,13 @@ def estimate_axis(xyzs):
     return nv
 
 
-def helix(params, num, pt0):
+def helix(parvals, num, pt0):
     ''' Return modeled coordinates (x, y, z).
         The length of the helix is represented by the num of progress.  
         pt0 is the beginning position of the helix.
     '''
     # Unpack parameters...
-    px    = params["px"]
-    py    = params["py"]
-    pz    = params["pz"]
-    nx    = params["nx"]
-    ny    = params["ny"]
-    nz    = params["nz"]
-    r     = params["r" ]
-    s     = params["s"]
-    omega = params["omega"]
-    phi   = params["phi"]
-    t     = params["t"]
+    px, py, pz, nx, ny, nz, r, s, omega, phi, t = parvals
 
     # Consider phase shift...
     psi_list = np.array([ omega * i for i in range(num) ])
@@ -97,7 +88,22 @@ def residual(params, xyzs):
     xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
 
     # Compute...
-    res   = helix(params, num, xyzs_nonan[0]) - xyzs
+    # Unpack parameters...
+    parvals = unpack_params(params)
+    res   = helix(parvals, num, xyzs_nonan[0]) - xyzs
+
+    return res.reshape(-1)
+
+
+def super_residual(params, xyzs):
+    # Calculate size of the helix...
+    num   = xyzs.shape[0]
+
+    # Avoid np.nan as the first valid point
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+
+    # Compute...
+    res = helix(params, num, xyzs_nonan[0]) - xyzs
 
     return res.reshape(-1)
 
@@ -225,20 +231,11 @@ def protein_fit_by_length(xyzs, helixlen):
 def check_fit(params, xyzs, pv0, nv0, nterm):
     # Generate the helix...
     xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
-    q = helix(params, xyzs.shape[0], xyzs_nonan[0])
+    parvals = unpack_params(params)
+    q = helix(parvals, xyzs.shape[0], xyzs_nonan[0])
 
     # Unpack parameters...
-    px    = params["px"]
-    py    = params["py"]
-    pz    = params["pz"]
-    nx    = params["nx"]
-    ny    = params["ny"]
-    nz    = params["nz"]
-    r     = params["r" ]
-    s     = params["s"]
-    omega = params["omega"]
-    phi   = params["phi"]
-    t     = params["t"]
+    px, py, pz, nx, ny, nz, r, s, omega, phi, t = parvals
     pv = np.array([px, py, pz])
     nv = np.array([nx, ny, nz])
 
@@ -294,20 +291,11 @@ def check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen):
     # Generate the helix...
     xyzs_sel = xyzs[bindex:bindex+helixlen]
     xyzs_sel_nonan = xyzs_sel[~np.isnan(xyzs_sel).any(axis = 1)]
-    q = helix(params, xyzs_sel.shape[0], xyzs_sel_nonan[0])
+    parvals = unpack_params(params)
+    q = helix(parvals, xyzs_sel.shape[0], xyzs_sel_nonan[0])
 
     # Unpack parameters...
-    px    = params["px"]
-    py    = params["py"]
-    pz    = params["pz"]
-    nx    = params["nx"]
-    ny    = params["ny"]
-    nz    = params["nz"]
-    r     = params["r" ]
-    s     = params["s"]
-    omega = params["omega"]
-    phi   = params["phi"]
-    t     = params["t"]
+    px, py, pz, nx, ny, nz, r, s, omega, phi, t = parvals
     pv = np.array([px, py, pz])
     nv = np.array([nx, ny, nz])
 
