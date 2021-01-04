@@ -25,10 +25,14 @@ def estimate_axis(xyzs):
     ''' Find an init axis.
         Refer to DOI: 10.1016/0097-8485(89)85005-3 for details.
     '''
+    # Remove np.nan
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+
+    # Compute
     nv = np.zeros(3)    # Axis vector
-    for i in range(len(xyzs) - 3):
-        h1 = bisector(xyzs[i], xyzs[i+1], xyzs[i+2])
-        h2 = bisector(xyzs[i+1], xyzs[i+2], xyzs[i+3])
+    for i in range(len(xyzs_nonan) - 3):
+        h1 = bisector(xyzs_nonan[i], xyzs_nonan[i+1], xyzs_nonan[i+2])
+        h2 = bisector(xyzs_nonan[i+1], xyzs_nonan[i+2], xyzs_nonan[i+3])
         hv = np.cross(h1, h2)
         nv += hv
     nv /= np.linalg.norm(nv)
@@ -86,11 +90,14 @@ def helix(params, num, pt0):
 
 
 def residual(params, xyzs):
-    # Calculate residual...
+    # Calculate size of the helix...
     num   = xyzs.shape[0]
-    ## input = px, py, pz, nx, ny, nz, r, s, omega, phi, t
-    ## res   = helix(input, num, xyzs[0]) - xyzs
-    res   = helix(params, num, xyzs[0]) - xyzs
+
+    # Avoid np.nan as the first valid point
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+
+    # Compute...
+    res   = helix(params, num, xyzs_nonan[0]) - xyzs
 
     return res.reshape(-1)
 
@@ -98,8 +105,9 @@ def residual(params, xyzs):
 def fit(params, xyzs, **kwargs):
     result = lmfit.minimize(residual, 
                             params, 
-                            method = 'least_squares', 
-                            args = (xyzs, ), 
+                            method     = 'least_squares', 
+                            nan_policy = 'omit',
+                            args       = (xyzs, ), 
                             **kwargs)
     return result
 
@@ -112,11 +120,14 @@ def protein(xyzs):
     s             = 5.5
     omega         = 1.7
     phi           = np.pi + omega
-    t             = - 0.5 * np.linalg.norm(xyzs[-1] - xyzs[0])
+
+    # Avoid nan when estimating t
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+    t = - 0.5 * np.linalg.norm(xyzs_nonan[-1] - xyzs_nonan[0])
 
     # Define init_values...
     # Assume helix axis passes through the average position of a straight helix
-    px, py, pz = np.mean(xyzs, axis = 0)
+    px, py, pz = np.nanmean(xyzs, axis = 0)
 
     # Estimate the helix axis vector...
     nv = estimate_axis(xyzs)
@@ -211,9 +222,10 @@ def protein_fit_by_length(xyzs, helixlen):
     return sorted_results[0]
 
 
-def check_fit(params, xyzs, pv0, nv0):
+def check_fit(params, xyzs, pv0, nv0, nterm):
     # Generate the helix...
-    q = helix(params, xyzs.shape[0], xyzs[0])
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+    q = helix(params, xyzs.shape[0], xyzs_nonan[0])
 
     # Unpack parameters...
     px    = params["px"]
@@ -255,10 +267,12 @@ def check_fit(params, xyzs, pv0, nv0):
     gp(f"")
 
     for i, (x, y, z) in enumerate(xyzs):
+        if np.nan in (x, y, z): continue
         gp(f"{x} {y} {z}")
     gp( "e")
     for i, (x, y, z) in enumerate(xyzs):
-        gp(f"{x} {y} {z} {i}")
+        if np.nan in (x, y, z): continue
+        gp(f"{x} {y} {z} {i + nterm}")
     gp( "e")
 
     gp(f"{pv0[0]} {pv0[1]} {pv0[2]}")
@@ -267,16 +281,20 @@ def check_fit(params, xyzs, pv0, nv0):
     gp( "e")
 
     for i, (x, y, z) in enumerate(q):
+        if np.nan in (x, y, z): continue
         gp(f"{x} {y} {z}")
     gp( "e")
 
     input("Press enter to exit...")
 
+    return None
+
 
 def check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen):
     # Generate the helix...
     xyzs_sel = xyzs[bindex:bindex+helixlen]
-    q = helix(params, xyzs_sel.shape[0], xyzs_sel[0])
+    xyzs_sel_nonan = xyzs_sel[~np.isnan(xyzs_sel).any(axis = 1)]
+    q = helix(params, xyzs_sel.shape[0], xyzs_sel_nonan[0])
 
     # Unpack parameters...
     px    = params["px"]
@@ -334,6 +352,8 @@ def check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen):
     gp( "e")
 
     input("Press enter to exit...")
+
+    return None
 
 
 
