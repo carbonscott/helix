@@ -401,6 +401,24 @@ def protein(xyzs):
     return result
 
 
+def peptide_fit_by_length(xyzs_dict, helixlen):
+    ''' Go through whole data and return the helix segment position that fits the best.
+        The best fit is found using brute-force.
+    '''
+    assert len(xyzs_dict["N"]) >= helixlen, "helixlen should be smaller than the total length."
+
+    results = []
+    xyzs_filtered_dict = {}
+    for i in range(len(xyzs_dict["N"]) - helixlen): 
+        for k, v in xyzs_dict.items():
+            xyzs_filtered_dict[k] = v[i:i+helixlen]
+        results.append( [ i, peptide(xyzs_filtered_dict) ] )
+
+    sorted_results = sorted(results, key = lambda x: x[1].cost)
+
+    return sorted_results[0]
+
+
 def protein_fit_by_length(xyzs, helixlen):
     ''' Go through whole data and return the helix segment position that fits the best.
         The best fit is found using brute-force.
@@ -475,11 +493,32 @@ def check_fit(parvals, xyzs, pv0, nv0, nterm):
     return None
 
 
-def check_select(params, xyzs, pv0, nv0, nterm, bindex, helixlen):
+def check_select_peptide(parvals, xyzs_dict, pv0, nv0, nterm, bindex, helixlen):
+    # Unpack parameters...
+    px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
+    rN, rCA, rC, rO                  = parvals[8:8+4]
+    phiN, phiCA, phiC, phiO          = parvals[12:12+4]
+    tN, tCA, tC, tO                  = parvals[16:16+4]
+
+    # Construct paramters for each atom...
+    parval_dict = {}
+    parval_dict["N"]  = px, py, pz, nx, ny, nz, s, omega, rN,  phiN,  tN
+    parval_dict["CA"] = px, py, pz, nx, ny, nz, s, omega, rCA, phiCA, tCA
+    parval_dict["C"]  = px, py, pz, nx, ny, nz, s, omega, rC,  phiC,  tC
+    parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
+
+    for i in xyzs_dict.keys():
+        print(f"Check {i}")
+        check_select(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm, bindex, helixlen)
+
+    return None
+
+
+def check_select(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen):
     # Generate the helix...
     xyzs_sel = xyzs[bindex:bindex+helixlen]
     xyzs_sel_nonan = xyzs_sel[~np.isnan(xyzs_sel).any(axis = 1)]
-    parvals = unpack_params(params)
+    ## parvals = unpack_params(params)
     q = helix(parvals, xyzs_sel.shape[0], xyzs_sel_nonan[0])
 
     # Unpack parameters...
