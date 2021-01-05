@@ -41,7 +41,7 @@ def estimate_axis(xyzs):
     return nv
 
 
-def helix(parvals, num, pt0):
+def helixmodel(parvals, num, pt0):
     ''' Return modeled coordinates (x, y, z).
         The length of the helix is represented by the num of progress.  
         pt0 is the beginning position of the helix.
@@ -80,7 +80,7 @@ def helix(parvals, num, pt0):
     return q
 
 
-def residual(params, xyzs):
+def residual_purehelix(params, xyzs):
     # Calculate size of the helix...
     num   = xyzs.shape[0]
 
@@ -91,12 +91,12 @@ def residual(params, xyzs):
     parvals = unpack_params(params)
 
     # Compute...
-    res   = helix(parvals, num, xyzs_nonan[0]) - xyzs
+    res   = helixmodel(parvals, num, xyzs_nonan[0]) - xyzs
 
     return res.reshape(-1)
 
 
-def residual_peptide(params, xyzs_dict):
+def residual_helix(params, xyzs_dict):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
@@ -124,7 +124,7 @@ def residual_peptide(params, xyzs_dict):
         xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
 
         # Compute...
-        res = helix(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) - xyzs_dict[i]
+        res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) - xyzs_dict[i]
         res_dict[i] = res
 
     # Format results for minimization...
@@ -140,8 +140,8 @@ def residual_peptide(params, xyzs_dict):
     return res_matrix.reshape(-1)
 
 
-def fit_peptide(params, xyzs_dict, **kwargs):
-    result = lmfit.minimize(residual_peptide, 
+def fit_helix(params, xyzs_dict, **kwargs):
+    result = lmfit.minimize(residual_helix, 
                             params, 
                             method     = 'least_squares', 
                             nan_policy = 'omit',
@@ -150,8 +150,8 @@ def fit_peptide(params, xyzs_dict, **kwargs):
     return result
 
 
-def fit(params, xyzs, **kwargs):
-    result = lmfit.minimize(residual, 
+def fit_purehelix(params, xyzs, **kwargs):
+    result = lmfit.minimize(residual_purehelix, 
                             params, 
                             method     = 'least_squares', 
                             nan_policy = 'omit',
@@ -160,7 +160,103 @@ def fit(params, xyzs, **kwargs):
     return result
 
 
-def peptide(xyzs_dict):
+def purehelix(xyzs):
+    ''' Fit a helix to amino acid according to input atomic positions.
+    '''
+    # Predefined helix parameters for amino acid...
+    s             = 5.5
+    omega         = 1.7
+    r             = 1.6
+    phi           = np.pi + omega
+
+    # Define init_values...
+    # Assume helix axis passes through the average position of a straight helix
+    pv = np.nanmean(xyzs, axis = 0)
+    px, py, pz = pv
+
+    # Estimate the helix axis vector...
+    nv = estimate_axis(xyzs)
+    nx, ny, nz = nv
+
+    # Avoid nan when estimating t
+    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
+    t = - np.linalg.norm(pv - xyzs_nonan[0])
+
+    # Init params...
+    params = init_params()
+
+    # Load init values
+    params.add("px",    value = px)
+    params.add("py",    value = py)
+    params.add("pz",    value = pz)
+    params.add("nx",    value = nx)
+    params.add("ny",    value = ny)
+    params.add("nz",    value = nz)
+    params.add("s" ,    value = s)
+    params.add("omega", value = omega)
+    params.add("r" ,    value = r)
+    params.add("phi",   value = phi)
+    params.add("t",     value = t)
+
+    # Set constraints...
+    for i in params.keys(): params[i].set(vary = False)
+
+    # Fitting process...
+    report_params_purehelix(params, title = f"Init report")
+
+    for i in ["px", "py", "pz"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"px, py, pz: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in ["phi"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"phi: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in ["s", "omega"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"s, omega: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in ["t"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"t: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in ["r"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"r: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
+    result = fit_purehelix(params, xyzs)
+    report_params_purehelix(params, title = f"nx, ny, nz: " + \
+                                  f"success = {result.success}, " + \
+                                  f"cost = {result.cost}")
+    params = result.params
+
+    for i in range(5):
+        result = fit_purehelix(params, xyzs, ftol = 1e-9)
+        report_params_purehelix(params, title = f"All params: " + \
+                                      f"success = {result.success}, " + \
+                                      f"cost = {result.cost}")
+        params = result.params
+
+    return result
+
+
+def helix(xyzs_dict):
     ''' Fit a helix to amino acid according to input atomic positions.
     '''
     # Predefined helix parameters for amino acid...
@@ -225,57 +321,57 @@ def peptide(xyzs_dict):
     params.add("tC"   , value = t["C"])
     params.add("tO"   , value = t["O"])
 
-    report_params_peptide(params, title = f"Init report")
+    report_params_helix(params, title = f"Init report")
 
     # Fitting process...
     # Set constraints...
     for i in params.keys(): params[i].set(vary = False)
 
     for i in ["px", "py", "pz"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"px, py, pz: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"phi: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"s, omega: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"t: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"r: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit_peptide(params, xyzs_dict)
-    report_params_peptide(params, title = f"nx, ny, nz: " + \
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
                                   f"cost = {result.cost}")
     params = result.params
 
     for i in range(5):
-        result = fit_peptide(params, xyzs_dict, ftol = 1e-9)
-        report_params_peptide(params, title = f"All params: " + \
+        result = fit_helix(params, xyzs_dict, ftol = 1e-9)
+        report_params_helix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
                                       f"cost = {result.cost}")
         params = result.params
@@ -283,7 +379,7 @@ def peptide(xyzs_dict):
     return result
 
 
-def check_fit_peptide(params, xyzs_dict, pv0, nv0, nterm):
+def check_fit_helix(params, xyzs_dict, pv0, nv0, nterm):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
@@ -300,108 +396,12 @@ def check_fit_peptide(params, xyzs_dict, pv0, nv0, nterm):
 
     for i in xyzs_dict.keys():
         print(f"Check {i}")
-        check_fit(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm)
+        check_fit_purehelix(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm)
 
     return None
 
 
-def protein(xyzs):
-    ''' Fit a helix to amino acid according to input atomic positions.
-    '''
-    # Predefined helix parameters for amino acid...
-    s             = 5.5
-    omega         = 1.7
-    r             = 1.6
-    phi           = np.pi + omega
-
-    # Define init_values...
-    # Assume helix axis passes through the average position of a straight helix
-    pv = np.nanmean(xyzs, axis = 0)
-    px, py, pz = pv
-
-    # Estimate the helix axis vector...
-    nv = estimate_axis(xyzs)
-    nx, ny, nz = nv
-
-    # Avoid nan when estimating t
-    xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
-    t = - np.linalg.norm(pv - xyzs_nonan[0])
-
-    # Init params...
-    params = init_params()
-
-    # Load init values
-    params.add("px",    value = px)
-    params.add("py",    value = py)
-    params.add("pz",    value = pz)
-    params.add("nx",    value = nx)
-    params.add("ny",    value = ny)
-    params.add("nz",    value = nz)
-    params.add("s" ,    value = s)
-    params.add("omega", value = omega)
-    params.add("r" ,    value = r)
-    params.add("phi",   value = phi)
-    params.add("t",     value = t)
-
-    # Set constraints...
-    for i in params.keys(): params[i].set(vary = False)
-
-    # Fitting process...
-    report_params(params, title = f"Init report")
-
-    for i in ["px", "py", "pz"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"px, py, pz: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in ["phi"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"phi: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in ["s", "omega"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"s, omega: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in ["t"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"t: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in ["r"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"r: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit(params, xyzs)
-    report_params(params, title = f"nx, ny, nz: " + \
-                                  f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
-    params = result.params
-
-    for i in range(5):
-        result = fit(params, xyzs, ftol = 1e-9)
-        report_params(params, title = f"All params: " + \
-                                      f"success = {result.success}, " + \
-                                      f"cost = {result.cost}")
-        params = result.params
-
-    return result
-
-
-def peptide_fit_by_length(xyzs_dict, helixlen):
+def fit_helix_by_length(xyzs_dict, helixlen):
     ''' Go through whole data and return the helix segment position that fits the best.
         The best fit is found using brute-force.
     '''
@@ -412,14 +412,14 @@ def peptide_fit_by_length(xyzs_dict, helixlen):
     for i in range(len(xyzs_dict["N"]) - helixlen): 
         for k, v in xyzs_dict.items():
             xyzs_filtered_dict[k] = v[i:i+helixlen]
-        results.append( [ i, peptide(xyzs_filtered_dict) ] )
+        results.append( [ i, helix(xyzs_filtered_dict) ] )
 
     sorted_results = sorted(results, key = lambda x: x[1].cost)
 
     return sorted_results[0]
 
 
-def protein_fit_by_length(xyzs, helixlen):
+def fit_purehelix_by_length(xyzs, helixlen):
     ''' Go through whole data and return the helix segment position that fits the best.
         The best fit is found using brute-force.
     '''
@@ -427,18 +427,18 @@ def protein_fit_by_length(xyzs, helixlen):
 
     results = []
     for i in range(len(xyzs) - helixlen): 
-        results.append( [ i, protein(xyzs[i:i+helixlen]) ] )
+        results.append( [ i, purehelix(xyzs[i:i+helixlen]) ] )
 
     sorted_results = sorted(results, key = lambda x: x[1].cost)
 
     return sorted_results[0]
 
 
-def check_fit(parvals, xyzs, pv0, nv0, nterm):
+def check_fit_purehelix(parvals, xyzs, pv0, nv0, nterm):
     # Generate the helix...
     xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
     ## parvals = unpack_params(params)
-    q = helix(parvals, xyzs.shape[0], xyzs_nonan[0])
+    q = helixmodel(parvals, xyzs.shape[0], xyzs_nonan[0])
 
     # Unpack parameters...
     px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
@@ -493,7 +493,7 @@ def check_fit(parvals, xyzs, pv0, nv0, nterm):
     return None
 
 
-def check_select_peptide(parvals, xyzs_dict, pv0, nv0, nterm, bindex, helixlen):
+def check_select_helix(parvals, xyzs_dict, pv0, nv0, nterm, bindex, helixlen):
     # Unpack parameters...
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
     rN, rCA, rC, rO                  = parvals[8:8+4]
@@ -509,17 +509,17 @@ def check_select_peptide(parvals, xyzs_dict, pv0, nv0, nterm, bindex, helixlen):
 
     for i in xyzs_dict.keys():
         print(f"Check {i}")
-        check_select(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm, bindex, helixlen)
+        check_select_purehelix(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm, bindex, helixlen)
 
     return None
 
 
-def check_select(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen):
+def check_select_purehelix(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen):
     # Generate the helix...
     xyzs_sel = xyzs[bindex:bindex+helixlen]
     xyzs_sel_nonan = xyzs_sel[~np.isnan(xyzs_sel).any(axis = 1)]
     ## parvals = unpack_params(params)
-    q = helix(parvals, xyzs_sel.shape[0], xyzs_sel_nonan[0])
+    q = helixmodel(parvals, xyzs_sel.shape[0], xyzs_sel_nonan[0])
 
     # Unpack parameters...
     px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
@@ -571,7 +571,7 @@ def check_select(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen):
     return None
 
 
-def report_params_peptide(params, title = ""):
+def report_params_helix(params, title = ""):
     # Unpack parameters...
     px    = params["px"   ].value
     py    = params["py"   ].value
@@ -609,7 +609,7 @@ def report_params_peptide(params, title = ""):
     return None
 
 
-def report_params(params, title = ""):
+def report_params_purehelix(params, title = ""):
     # Unpack parameters...
     px    = params["px"].value
     py    = params["py"].value
