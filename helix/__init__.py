@@ -640,3 +640,49 @@ def report_params_purehelix(params, title = ""):
     print("")
 
     return None
+
+
+def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
+    ''' Go through the whole helix by step with a helix segment length len_segment.
+    '''
+    len_peptide = cterm - nterm + 1
+    params_dict = {}
+    for bindex in range(0, len_peptide, step):
+        # Obtain the helix segment...
+        xyzs_filtered_dict = {}
+        for k, v in xyzs_dict.items():
+            xyzs_filtered_dict[k] = v[bindex:bindex+len_segment]
+
+        # Fitting...
+        try: result = helix(xyzs_filtered_dict)
+        except ValueError: continue
+
+        print(f"Fitting {bindex + nterm}...{bindex + nterm + len_segment}")
+
+        ## # Report
+        ## helix.report_params_helix(result.params, title = f"Optimal params:" + \
+        ##                                            f"cost = {result.cost}")
+        # Save values...
+        params_dict[bindex] = [result.params, result.cost]
+
+    return params_dict
+
+
+def export_params_dict(params_dict, fl_out):
+    with open(fl_out,'w') as fh:
+        for k, v in params_dict.items():
+            # Unpack values...
+            params, rmsd = v
+
+            # Unpack parameters...
+            parvals = unpack_params(params)
+
+            # Export...
+            fh.write(f"{k:03d}")
+            fh.write(f"{rmsd:10.5f}")
+            for parval in parvals:
+                fh.write(f"{parval:8.3f}")
+                fh.write(f"    ")
+            fh.write("\n")
+
+
