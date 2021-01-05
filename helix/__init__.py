@@ -264,15 +264,15 @@ def helix(xyzs_dict):
     omega = 100 / 180 * np.pi    # 100 degree turn per residue
 
     # Predefine radius and phase offset
-    r, phi = {}, {}
-    r["N"] = 1.458    # Obtained from results of fitting N alone
-    r["CA"] = 2.27
-    r["C"] = 1.729
-    r["O"] = 2.051
-    phi["N"] = 4.85
-    phi["CA"] = 4.98
-    phi["C"] = 5.16
-    phi["O"] = 5.152
+    r, phi    = {}, {}
+    r["N"]    = 1.458    # Obtained from results of fitting N alone
+    r["CA"]   = 2.27
+    r["C"]    = 1.729
+    r["O"]    = 2.051
+    phi["N"]  = - np.pi / 2
+    phi["CA"] = - np.pi / 2
+    phi["C"]  = - np.pi / 2
+    phi["O"]  = - np.pi / 2
 
     # Define init_values
     # Estimate the mean helix axis...
@@ -280,6 +280,7 @@ def helix(xyzs_dict):
     for i in xyzs_dict.keys(): nv_dict[i] = estimate_axis(xyzs_dict[i])
     nv_array = np.array( [ v for v in nv_dict.values() ] )
     nv = np.nanmean(nv_array, axis = 0)
+    nv /= np.linalg.norm(nv)
     nx, ny, nz = nv
 
     # Estimate the mean position that the axis of helix passes through...
@@ -294,7 +295,10 @@ def helix(xyzs_dict):
     xyzs_nonan_dict = {}
     for i in xyzs_dict.keys():
         xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
-        t[i] = - np.linalg.norm(pv - xyzs_nonan_dict[i][0])
+        ## t[i] = - np.linalg.norm(pv - xyzs_nonan_dict[i][0])
+        # The projection along axis is equivalent to translation...
+        pv_to_firstatom = xyzs_nonan_dict[i][0] - pv
+        t[i] = np.dot( pv_to_firstatom, nv )
 
     # Init params...
     params = init_params()
