@@ -656,7 +656,7 @@ def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
     '''
     len_peptide = cterm - nterm + 1
     params_dict = {}
-    for bindex in range(0, len_peptide, step):
+    for bindex in range(0, len_peptide - len_segment, step):
         # Obtain the helix segment...
         xyzs_filtered_dict = {}
         for k, v in xyzs_dict.items():
