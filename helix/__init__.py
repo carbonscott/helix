@@ -208,49 +208,49 @@ def purehelix(xyzs):
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["phi"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["t"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["r"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
         result = fit_purehelix(params, xyzs, ftol = 1e-9)
         report_params_purehelix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
-                                      f"cost = {result.cost}")
+                                      f"rmsd = {rmsd(result.residual)}")
         params = result.params
 
     return result
@@ -335,49 +335,49 @@ def helix(xyzs_dict):
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
-                                  f"cost = {result.cost}")
+                                  f"rmsd = {rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
         result = fit_helix(params, xyzs_dict, ftol = 1e-9)
         report_params_helix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
-                                      f"cost = {result.cost}")
+                                      f"rmsd = {rmsd(result.residual)}")
         params = result.params
 
     return result
@@ -418,7 +418,7 @@ def fit_helix_by_length(xyzs_dict, helixlen):
             xyzs_filtered_dict[k] = v[i:i+helixlen]
         results.append( [ i, helix(xyzs_filtered_dict) ] )
 
-    sorted_results = sorted(results, key = lambda x: x[1].cost)
+    sorted_results = sorted(results, key = lambda x: rmsd(x[1].residual))
 
     return sorted_results[0]
 
@@ -433,7 +433,7 @@ def fit_purehelix_by_length(xyzs, helixlen):
     for i in range(len(xyzs) - helixlen): 
         results.append( [ i, purehelix(xyzs[i:i+helixlen]) ] )
 
-    sorted_results = sorted(results, key = lambda x: x[1].cost)
+    sorted_results = sorted(results, key = lambda x: rmsd(x[1].residual))
 
     return sorted_results[0]
 
@@ -642,6 +642,14 @@ def report_params_purehelix(params, title = ""):
     return None
 
 
+def rmsd(residual):
+    ''' https://en.wikipedia.org/wiki/Root-mean-square_deviation
+    '''
+    residual_nonan = residual[~np.isnan(residual)]
+    res = np.sqrt( np.sum(residual_nonan * residual_nonan) / len(residual_nonan) )
+    return res
+
+
 def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
     ''' Go through the whole helix by step with a helix segment length len_segment.
     '''
@@ -659,11 +667,8 @@ def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
 
         print(f"Fitting {bindex + nterm}...{bindex + nterm + len_segment}")
 
-        ## # Report
-        ## helix.report_params_helix(result.params, title = f"Optimal params:" + \
-        ##                                            f"cost = {result.cost}")
         # Save values...
-        params_dict[bindex] = [result.params, result.cost]
+        params_dict[bindex] = [result.params, rmsd(result.residual)]
 
     return params_dict
 
