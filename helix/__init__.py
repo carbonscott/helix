@@ -441,7 +441,6 @@ def fit_purehelix_by_length(xyzs, helixlen):
 def check_fit_purehelix(parvals, xyzs, pv0, nv0, nterm):
     # Generate the helix...
     xyzs_nonan = xyzs[~np.isnan(xyzs).any(axis = 1)]
-    ## parvals = unpack_params(params)
     q = helixmodel(parvals, xyzs.shape[0], xyzs_nonan[0])
 
     # Unpack parameters...
@@ -646,7 +645,9 @@ def rmsd(residual):
     ''' https://en.wikipedia.org/wiki/Root-mean-square_deviation
     '''
     residual_nonan = residual[~np.isnan(residual)]
-    res = np.sqrt( np.sum(residual_nonan * residual_nonan) / len(residual_nonan) )
+    res = np.nan
+    if len(residual_nonan) > 0:
+        res = np.sqrt( np.sum(residual_nonan * residual_nonan) / len(residual_nonan) )
     return res
 
 
