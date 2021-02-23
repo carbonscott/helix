@@ -31,6 +31,19 @@ def measure_spline(xyzs):
     norm_bvec_aux = np.linalg.norm(bvec_aux, axis = 0, keepdims = True)
     bvec = bvec_aux / norm_bvec_aux
 
+    # Obtain axial vector...
+    # Get norm of db and dt
+    db = bvec[:, 1:] - bvec[:, :-1]
+    dt = tvec[:, 1:] - tvec[:, :-1]
+    norm_db = np.linalg.norm(db, axis = 0, keepdims = True)
+    norm_dt = np.linalg.norm(dt, axis = 0, keepdims = True)
+
+    # Get rt and rb
+    db_div_dt = norm_db / norm_dt
+    rt = (1 + db_div_dt)**(-2)
+    rb = db_div_dt * rt
+    avec = rt * bvec[:, :-1] + rb * tvec[:, :-1]
+
     # Obtain curvature...
     curv = norm_nvec_aux / norm_dr1
 
@@ -38,7 +51,7 @@ def measure_spline(xyzs):
     tor_aux = np.sum(bvec_aux * dr3, axis = 0, keepdims = True)
     tor  = tor_aux / (norm_bvec_aux**2)
 
-    return dr1, dr2, tvec, nvec, bvec, curv, tor
+    return dr1, dr2, tvec, nvec, bvec, avec, curv, tor
 
 
 
