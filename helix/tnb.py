@@ -42,9 +42,7 @@ def measure_spline(xyzs):
     db_div_dt = norm_db / norm_dt
     rt = (1 + db_div_dt)**(-2)
     rb = db_div_dt * rt
-    avec_aux  = rt * bvec[:, :-1] + rb * tvec[:, :-1]
-    norm_avec = np.linalg.norm(avec_aux, axis = 0, keepdims = True)
-    avec = avec_aux / norm_avec
+    avec  = rt * bvec[:, :-1] + rb * tvec[:, :-1]
 
     # Obtain curvature...
     curv = norm_nvec_aux / norm_dr1
