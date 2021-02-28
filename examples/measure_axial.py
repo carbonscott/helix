@@ -30,7 +30,7 @@ chain = "A"
 nterm = 244
 cterm = 277
 sample_scale = 1    # 1 means don't over sample;  2 means use double the sample points.
-sample_num = (cterm - nterm + 1) * sample_rate
+sample_num = (cterm - nterm + 1) * sample_scale
 
 # Obtain coordinates...
 xyzs_dict = {}
@@ -80,7 +80,7 @@ if 0:
 
 if 1:
     # [[[ EXPORT ]]]
-    if 0:
+    if 1:
         fl_export = f"example.curve.dat"
         with open(fl_export,'w') as fh:
             for i in range(len(tor[0])):
