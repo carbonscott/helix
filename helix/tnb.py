@@ -51,7 +51,13 @@ def measure_spline(xyzs):
     tor_aux = np.sum(bvec_aux * dr3, axis = 0, keepdims = True)
     tor  = tor_aux / (norm_bvec_aux**2)
 
-    return dr1, dr2, tvec, nvec, bvec, avec, curv, tor
+    # Obtain angular turn per atom...
+    nvec_dot = np.sum( nvec[:, :-1] * nvec[:,1:], axis = 0 )
+    nvec_cosang = np.zeros(len(nvec_dot) + 1)
+    nvec_cosang[:-1] = np.arccos(nvec_dot)
+    nvec_cosang[-1]  = np.nan
+
+    return dr1, dr2, tvec, nvec, bvec, avec, curv, tor, nvec_cosang
 
 
 
