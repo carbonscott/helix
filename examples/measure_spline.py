@@ -15,6 +15,7 @@ import os
 fl_chain = "chains.comp.xlsx"
 lines    = load_xlsx(fl_chain, sheet = "Sheet2")
 drc_pdb  = "pdb"
+pro      = ".pro"
 
 # Specify the range of atoms from rhodopsin...
 nterm = 154
@@ -33,7 +34,7 @@ for i_fl, line in enumerate(lines):
 
     # Get CA value for visualization
     # Read the PDB file...
-    fl_pdb    = os.path.join(drc_pdb, f"{pdb}.pdb")
+    fl_pdb    = os.path.join(drc_pdb, f"{pdb}{pro}.pdb")
     atom_list = pr.atom.read(fl_pdb)
     atom_dict = pr.atom.create_lookup_table(atom_list)
 
@@ -45,21 +46,31 @@ for i_fl, line in enumerate(lines):
     # Model with cubic spline...
     # Initialize model points (place holder arrays)
     model_points = ( np.zeros(sample_num), \
-                     np.zeros(sample_num), 
+                     np.zeros(sample_num), \
                      np.zeros(sample_num) )
 
     # Fetch id for nan values
-    id_nan       = np.isnan(xyzs_dict["CA"]).any(axis = 1)
+    id_non_nan = ~np.isnan(xyzs_dict["CA"]).any(axis = 1)
 
-    # Fetch non nan coordinates
-    xyzs_non_nan = xyzs_dict["CA"][~id_nan]
-    len_non_nan  = np.count_nonzero(id_nan == False)
+    # Find consecutive integers and group them
+    id_non_nan_groups = pr.utils.group_consecutive_integer(np.where(id_non_nan)[0])
 
-    # Fit spline
-    model_points_non_nan = helix.tnb.fit_spline(xyzs_non_nan.T, num = len_non_nan)
+    # Find spline for each group
+    for id_non_nan_group in id_non_nan_groups:
+        # Convert to numpy array to facilitate indexing
+        id_non_nan_group_npary = np.array(id_non_nan_group)
 
-    # Return non nan model points to place holder arrays
-    for i in range(3): model_points[i][~id_nan] = model_points_non_nan[i]
+        # Fetch non nan coordinates
+        xyzs_non_nan = xyzs_dict["CA"][id_non_nan_group_npary]
+        len_non_nan  = len(id_non_nan_group_npary)
+        if not len_non_nan > 3: continue    # Don't fit if data points are not sufficient for a cubic spline
+
+        # Fit spline
+        model_points_non_nan = helix.tnb.fit_spline(xyzs_non_nan.T, num = len_non_nan)
+
+        # Return non nan model points to place holder arrays
+        for i in range(3):
+            model_points[i][id_non_nan_group_npary] = model_points_non_nan[i]
 
     # [[[ MEASURE CURVES IN SPACE ]]]
     dr1 , dr2 , \
