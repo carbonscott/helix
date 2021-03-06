@@ -4,11 +4,12 @@
 import numpy as np
 from scipy.interpolate import splprep, splev
 
-
 def measure_spline(xyzs):
     ''' Calculate curvature, torsion of a curve, and axial vector under TNB frame,
         also known as Frenet-Serret frame.  
         DOI: 10.1007/s00894-013-1819-7
+        URL: https://janakiev.com/blog/framing-parametric-curves/
+        (x..., y..., z...)
     '''
     # Obtain the derivatives...
     dr1 = np.gradient(xyzs, axis = 1)
@@ -19,17 +20,15 @@ def measure_spline(xyzs):
     norm_dr1 = np.linalg.norm(dr1, axis = 0, keepdims = True)
     tvec = dr1 / norm_dr1
 
-    # Find dT/dt...
-    nvec_aux = np.gradient(tvec, axis = 1)
-
-    # Obtain N vector...
-    norm_nvec_aux = np.linalg.norm(nvec_aux, axis = 0, keepdims = True)
-    nvec = nvec_aux / norm_nvec_aux
-
     # Obtain B vector...
     bvec_aux = np.cross(dr1.T, dr2.T).T
     norm_bvec_aux = np.linalg.norm(bvec_aux, axis = 0, keepdims = True)
     bvec = bvec_aux / norm_bvec_aux
+
+    # Obtain N vector...
+    nvec_aux = np.cross(bvec.T, tvec.T).T
+    norm_nvec_aux = np.linalg.norm(nvec_aux, axis = 0, keepdims = True)
+    nvec = nvec_aux / norm_nvec_aux
 
     # Obtain axial vector...
     # Get norm of db and dt
