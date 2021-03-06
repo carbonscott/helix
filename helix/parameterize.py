@@ -208,49 +208,49 @@ def purehelix(xyzs):
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["phi"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["t"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["r"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
     result = fit_purehelix(params, xyzs)
     report_params_purehelix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
         result = fit_purehelix(params, xyzs, ftol = 1e-9)
         report_params_purehelix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
-                                      f"rmsd = {rmsd(result.residual)}")
+                                      f"rmsd = {calc_rmsd(result.residual)}")
         params = result.params
 
     return result
@@ -335,49 +335,49 @@ def helix(xyzs_dict):
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
-                                  f"rmsd = {rmsd(result.residual)}")
+                                  f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
         result = fit_helix(params, xyzs_dict, ftol = 1e-9)
         report_params_helix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
-                                      f"rmsd = {rmsd(result.residual)}")
+                                      f"rmsd = {calc_rmsd(result.residual)}")
         params = result.params
 
     return result
@@ -418,7 +418,7 @@ def fit_helix_by_length(xyzs_dict, helixlen):
             xyzs_filtered_dict[k] = v[i:i+helixlen]
         results.append( [ i, helix(xyzs_filtered_dict) ] )
 
-    sorted_results = sorted(results, key = lambda x: rmsd(x[1].residual))
+    sorted_results = sorted(results, key = lambda x: calc_rmsd(x[1].residual))
 
     return sorted_results[0]
 
@@ -433,7 +433,7 @@ def fit_purehelix_by_length(xyzs, helixlen):
     for i in range(len(xyzs) - helixlen): 
         results.append( [ i, purehelix(xyzs[i:i+helixlen]) ] )
 
-    sorted_results = sorted(results, key = lambda x: rmsd(x[1].residual))
+    sorted_results = sorted(results, key = lambda x: calc_rmsd(x[1].residual))
 
     return sorted_results[0]
 
@@ -603,9 +603,9 @@ def report_params_helix(params, title = ""):
     print(f"px, py, pz:              {px:<10.3f}    {py:<10.3f}    {pz:<10.3f}")
     print(f"nx, ny, xz:              {nx:<10.3f}    {ny:<10.3f}    {nz:<10.3f}")
     print(f"s:                       {s:<10.3f}")
-    print(f"omega:                   {omega:<10.3f}")
+    print(f"omega:                   {omega / np.pi * 180:<10.3f}")
     print(f"rN, rCA, rC, rO:         {rN:<10.3f}    {rCA:<10.3f}    {rC:<10.3f}    {rO:<10.3f}")
-    print(f"phiN, phiCA, phiC, phiO: {phiN:<10.3f}    {phiCA:<10.3f}    {phiC:<10.3f}    {phiO:<10.3f}")
+    print(f"phiN, phiCA, phiC, phiO: {phiN / np.pi * 180:<10.3f}    {phiCA / np.pi * 180:<10.3f}    {phiC / np.pi * 180:<10.3f}    {phiO / np.pi * 180:<10.3f}")
     print(f"tN, tCA, tC, tO:         {tN:<10.3f}    {tCA:<10.3f}    {tC:<10.3f}    {tO:<10.3f}")
     print("")
 
@@ -641,7 +641,7 @@ def report_params_purehelix(params, title = ""):
     return None
 
 
-def rmsd(residual):
+def calc_rmsd(residual):
     ''' https://en.wikipedia.org/wiki/Root-mean-square_deviation
     '''
     residual_nonan = residual[~np.isnan(residual)]
@@ -669,7 +669,7 @@ def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
         print(f"Fitting {bindex + nterm}...{bindex + nterm + len_segment}")
 
         # Save values...
-        params_dict[bindex] = [result.params, rmsd(result.residual)]
+        params_dict[bindex] = [result.params, calc_rmsd(result.residual)]
 
     return params_dict
 
@@ -692,3 +692,31 @@ def export_params_dict(params_dict, fl_out):
             fh.write("\n")
 
 
+def report_result(result):
+    # Fetch params and rmsd...
+    params = result.params
+    rmsd   = calc_rmsd(result.residual)
+
+    # Unpack params...
+    parvals = unpack_params(params)
+    px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
+    rN, rCA, rC, rO                  = parvals[8:8+4]
+    phiN, phiCA, phiC, phiO          = parvals[12:12+4]
+    tN, tCA, tC, tO                  = parvals[16:16+4]
+
+    # Convert angle from radian to degree
+    omega = omega / np.pi * 180
+    phiN  = phiN  / np.pi * 180
+    phiCA = phiCA / np.pi * 180
+    phiC  = phiC  / np.pi * 180
+    phiO  = phiO  / np.pi * 180
+
+    # Export values...
+    res = [ f"{i:10.3f}" \
+            for i in [ px, py, pz, nx, ny, nz, s, omega,\
+                       rN, rCA, rC, rO,                 \
+                       phiN, phiCA, phiC, phiO,         \
+                       tN, tCA, tC, tO,                 \
+                       rmsd ] ]
+
+    return res
