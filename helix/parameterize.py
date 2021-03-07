@@ -383,7 +383,7 @@ def helix(xyzs_dict):
     return result
 
 
-def check_fit_helix(params, xyzs_dict, pv0, nv0, nterm):
+def check_fit_helix(params, xyzs_dict, pv0, nv0, nterm, atom_to_check):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
@@ -398,7 +398,7 @@ def check_fit_helix(params, xyzs_dict, pv0, nv0, nterm):
     parval_dict["C"]  = px, py, pz, nx, ny, nz, s, omega, rC,  phiC,  tC
     parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
 
-    for i in xyzs_dict.keys():
+    for i in atom_to_check:
         print(f"Check {i}")
         check_fit_purehelix(parval_dict[i], xyzs_dict[i], pv0, nv0, nterm)
 
