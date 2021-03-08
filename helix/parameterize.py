@@ -123,7 +123,11 @@ def residual_helix(params, xyzs_dict):
         xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
 
         # Compute...
-        res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) - xyzs_dict[i]
+        # Consider regularization
+        lam = 1
+        res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
+              - xyzs_dict[i] \
+              + lam * (nx * nx + ny * ny + nz * nz - 1) ** 2
         res_dict[i] = res
 
     # Format results for minimization...
