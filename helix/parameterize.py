@@ -50,17 +50,16 @@ def helixmodel(parvals, num, pt0):
     px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
 
     # Consider phase shift...
-    psi_list = np.array([ omega * i for i in range(num) ])
+    psi_list = np.array([ omega * i for i in range(num) ], dtype = np.float64)
 
     # Get vector connecting p and first atom...
-    pv  = np.array([px, py, pz])
+    pv  = np.array([px, py, pz], dtype = np.float64)
     pt0 = np.array(pt0)
     c = pt0 - pv
 
     # Form a orthonormal system...
     # Direction cosine: http://www.geom.uiuc.edu/docs/reference/CRC-formulas/node52.html
-    n  = np.array([nx, ny, nz], dtype = np.float32)
-    n /= np.linalg.norm(n)
+    n  = np.array([nx, ny, nz], dtype = np.float64)
 
     # Derive the v, w vector (third vector) to facilitate the construction of a helix...
     v = np.cross(n, c)
@@ -69,7 +68,7 @@ def helixmodel(parvals, num, pt0):
     w /= np.linalg.norm(w)
 
     # Model it and save result in q...
-    p  = np.array([px, py, pz], dtype = np.float32)
+    p  = np.array([px, py, pz], dtype = np.float64)
     q  = np.zeros((len(psi_list), 3))
     q += p.reshape(1, -1)
     q += n.reshape(1, -1) * s * psi_list.reshape(-1, 1) / (2 * np.pi)
@@ -338,6 +337,13 @@ def helix(xyzs_dict):
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
+    for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
+    result = fit_helix(params, xyzs_dict)
+    report_params_helix(params, title = f"nx, ny, nz: " + \
+                                  f"success = {result.success}, " + \
+                                  f"rmsd = {calc_rmsd(result.residual)}")
+    params = result.params
+
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"phi: " + \
@@ -362,13 +368,6 @@ def helix(xyzs_dict):
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict)
     report_params_helix(params, title = f"r: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
-    params = result.params
-
-    for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
-    report_params_helix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
