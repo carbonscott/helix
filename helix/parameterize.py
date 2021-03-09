@@ -131,8 +131,8 @@ def residual_helix(params, xyzs_dict, pa0, lam):
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
               - xyzs_dict[i]
         res  = np.abs(res)
-        res += lam[0] * np.abs(nx * nx + ny * ny + nz * nz - 1) / num_dict[i]
-        res += lam[1] * np.linalg.norm( pv - pa0 ) / num_dict[i]
+        res += lam[0] * np.abs(nx * nx + ny * ny + nz * nz - 1) / np.sqrt(num_dict[i])
+        res += lam[1] * np.linalg.norm( pv - pa0 ) / np.sqrt(num_dict[i])
         res_dict[i] = res
 
     # Format results for minimization...
