@@ -60,6 +60,7 @@ def helixmodel(parvals, num, pt0):
     # Form a orthonormal system...
     # Direction cosine: http://www.geom.uiuc.edu/docs/reference/CRC-formulas/node52.html
     n  = np.array([nx, ny, nz], dtype = np.float64)
+    n /= np.linalg.norm(n)
 
     # Derive the v, w vector (third vector) to facilitate the construction of a helix...
     v = np.cross(n, c)
@@ -95,7 +96,7 @@ def residual_purehelix(params, xyzs):
     return res.reshape(-1)
 
 
-def residual_helix(params, xyzs_dict, lam):
+def residual_helix(params, xyzs_dict, pa0, lam):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
@@ -115,6 +116,9 @@ def residual_helix(params, xyzs_dict, lam):
     xyzs_nonan_dict = {}
     res_dict        = {}
 
+    # Facilitate regularization based on pa0
+    pv  = np.array([px, py, pz], dtype = np.float64)
+
     # Computation for each type of atom...
     for i in xyzs_dict.keys():
         num_dict[i]  = xyzs_dict[i].shape[0]
@@ -126,7 +130,9 @@ def residual_helix(params, xyzs_dict, lam):
         # Consider regularization
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
               - xyzs_dict[i]
-        res += lam * np.sqrt( (nx * nx + ny * ny + nz * nz - 1) ** 2 )
+        res  = np.abs(res)
+        res += lam[0] * np.abs(nx * nx + ny * ny + nz * nz - 1) / num_dict[i]
+        res += lam[1] * np.linalg.norm( pv - pa0 ) / num_dict[i]
         res_dict[i] = res
 
     # Format results for minimization...
@@ -142,12 +148,12 @@ def residual_helix(params, xyzs_dict, lam):
     return res_matrix.reshape(-1)
 
 
-def fit_helix(params, xyzs_dict, lam = 5, **kwargs):
+def fit_helix(params, xyzs_dict, pa0, lam, **kwargs):
     result = lmfit.minimize(residual_helix, 
                             params, 
                             method     = 'least_squares', 
                             nan_policy = 'omit',
-                            args       = (xyzs_dict, lam), 
+                            args       = (xyzs_dict, pa0, lam), 
                             **kwargs)
 
     return result
@@ -259,7 +265,7 @@ def purehelix(xyzs):
     return result
 
 
-def helix(xyzs_dict, lam = 5, report = True):
+def helix(xyzs_dict, lam, report = True):
     ''' Fit a helix to amino acid according to input atomic positions.
         lam is regularization constant.  
     '''
@@ -290,9 +296,12 @@ def helix(xyzs_dict, lam = 5, report = True):
     # Estimate the mean position that the axis of helix passes through...
     pv_dict = {}
     for i in xyzs_dict.keys(): pv_dict[i] = np.nanmean(xyzs_dict[i], axis = 0)
-    pv_array = np.array( [ v for v in pv_dict.values() ] )
+    pv_array = np.array( [ v for v in pv_dict.values() ], dtype = np.float64)
     pv = np.nanmean(pv_array, axis = 0)
     px, py, pz = pv
+
+    # Record the init position that an axial will pass through
+    pa0 = pv.copy()
 
     # Predefine axial translational offset
     t = {}
@@ -303,6 +312,11 @@ def helix(xyzs_dict, lam = 5, report = True):
         # The projection along axis is equivalent to translation...
         pv_to_firstatom = xyzs_nonan_dict[i][0] - pv
         t[i] = np.dot( pv_to_firstatom, nv )
+    ## t = {}
+    ## t["N"] = -8.053
+    ## t["CA"] = -6.808
+    ## t["C"] = -5.338
+    ## t["O"] = -3.691
 
     # Init params...
     params = init_params()
@@ -336,7 +350,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     for i in params.keys(): params[i].set(vary = False)
 
     for i in ["px", "py", "pz"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"px, py, pz: " + \
                                       f"success = {result.success}, " + \
@@ -344,7 +358,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"nx, ny, nz: " + \
                                       f"success = {result.success}, " + \
@@ -352,7 +366,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"phi: " + \
                                       f"success = {result.success}, " + \
@@ -360,7 +374,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"s, omega: " + \
                                       f"success = {result.success}, " + \
@@ -368,7 +382,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"t: " + \
                                       f"success = {result.success}, " + \
@@ -376,7 +390,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict, lam)
+    result = fit_helix(params, xyzs_dict, pa0, lam)
     if report:
         report_params_helix(params, title = f"r: " + \
                                       f"success = {result.success}, " + \
@@ -384,7 +398,7 @@ def helix(xyzs_dict, lam = 5, report = True):
     params = result.params
 
     for i in range(5):
-        result = fit_helix(params, xyzs_dict, lam, ftol = 1e-9)
+        result = fit_helix(params, xyzs_dict, pa0, lam, ftol = 1e-9)
         if report:
             report_params_helix(params, title = f"All params: " + \
                                           f"success = {result.success}, " + \
