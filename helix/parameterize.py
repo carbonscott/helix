@@ -262,8 +262,9 @@ def purehelix(xyzs):
     return result
 
 
-def helix(xyzs_dict):
+def helix(xyzs_dict, lam = 5, report = True):
     ''' Fit a helix to amino acid according to input atomic positions.
+        lam is regularization constant.  
     '''
     # Predefined helix parameters for amino acid...
     s     = 5.5                  # pitch size of an alpha helix
@@ -331,10 +332,7 @@ def helix(xyzs_dict):
     params.add("tC"   , value = t["C"])
     params.add("tO"   , value = t["O"])
 
-    # Regularization constant
-    lam = 5
-
-    report_params_helix(params, title = f"Init report")
+    if report: report_params_helix(params, title = f"Init report")
 
     # Fitting process...
     # Set constraints...
@@ -342,51 +340,58 @@ def helix(xyzs_dict):
 
     for i in ["px", "py", "pz"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"px, py, pz: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"px, py, pz: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"nx, ny, nz: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"nx, ny, nz: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"phi: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"phi: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"s, omega: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"s, omega: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"t: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"t: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
     result = fit_helix(params, xyzs_dict, lam)
-    report_params_helix(params, title = f"r: " + \
-                                  f"success = {result.success}, " + \
-                                  f"rmsd = {calc_rmsd(result.residual)}")
+    if report:
+        report_params_helix(params, title = f"r: " + \
+                                      f"success = {result.success}, " + \
+                                      f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
         result = fit_helix(params, xyzs_dict, lam, ftol = 1e-9)
-        report_params_helix(params, title = f"All params: " + \
-                                      f"success = {result.success}, " + \
-                                      f"rmsd = {calc_rmsd(result.residual)}")
+        if report:
+            report_params_helix(params, title = f"All params: " + \
+                                          f"success = {result.success}, " + \
+                                          f"rmsd = {calc_rmsd(result.residual)}")
         params = result.params
 
     return result
