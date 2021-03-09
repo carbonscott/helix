@@ -126,8 +126,7 @@ def residual_helix(params, xyzs_dict, lam):
         # Consider regularization
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
               - xyzs_dict[i]
-        res *= lam
-        res += (nx * nx + ny * ny + nz * nz - 1) ** 2
+        res += lam * np.sqrt( (nx * nx + ny * ny + nz * nz - 1) ** 2 )
         res_dict[i] = res
 
     # Format results for minimization...
@@ -151,8 +150,6 @@ def fit_helix(params, xyzs_dict, lam = 5, **kwargs):
                             args       = (xyzs_dict, lam), 
                             **kwargs)
 
-    # Offset the scaling due to regularization
-    result.residual /= lam
     return result
 
 
