@@ -60,7 +60,7 @@ def helixmodel(parvals, num, pt0):
     # Form a orthonormal system...
     # Direction cosine: http://www.geom.uiuc.edu/docs/reference/CRC-formulas/node52.html
     n  = np.array([nx, ny, nz], dtype = np.float64)
-    n /= np.linalg.norm(n)
+    ## n /= np.linalg.norm(n)
 
     # Derive the v, w vector (third vector) to facilitate the construction of a helix...
     v = np.cross(n, c)
