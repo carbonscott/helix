@@ -95,7 +95,7 @@ def residual_purehelix(params, xyzs):
     return res.reshape(-1)
 
 
-def residual_helix(params, xyzs_dict):
+def residual_helix(params, xyzs_dict, lam):
     # Unpack parameters...
     parvals = unpack_params(params)
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
@@ -124,10 +124,10 @@ def residual_helix(params, xyzs_dict):
 
         # Compute...
         # Consider regularization
-        lam = 1
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
-              - xyzs_dict[i] \
-              + lam * (nx * nx + ny * ny + nz * nz - 1) ** 2
+              - xyzs_dict[i]
+        res *= lam
+        res += (nx * nx + ny * ny + nz * nz - 1) ** 2
         res_dict[i] = res
 
     # Format results for minimization...
@@ -143,13 +143,16 @@ def residual_helix(params, xyzs_dict):
     return res_matrix.reshape(-1)
 
 
-def fit_helix(params, xyzs_dict, **kwargs):
+def fit_helix(params, xyzs_dict, lam = 5, **kwargs):
     result = lmfit.minimize(residual_helix, 
                             params, 
                             method     = 'least_squares', 
                             nan_policy = 'omit',
-                            args       = (xyzs_dict, ), 
+                            args       = (xyzs_dict, lam), 
                             **kwargs)
+
+    # Offset the scaling due to regularization
+    result.residual /= lam
     return result
 
 
@@ -328,6 +331,9 @@ def helix(xyzs_dict):
     params.add("tC"   , value = t["C"])
     params.add("tO"   , value = t["O"])
 
+    # Regularization constant
+    lam = 5
+
     report_params_helix(params, title = f"Init report")
 
     # Fitting process...
@@ -335,49 +341,49 @@ def helix(xyzs_dict):
     for i in params.keys(): params[i].set(vary = False)
 
     for i in ["px", "py", "pz"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"px, py, pz: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["nx", "ny", "nz"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"nx, ny, nz: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["phiN", "phiCA", "phiC", "phiO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"phi: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["s", "omega"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"s, omega: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["tN", "tCA", "tC", "tO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"t: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in ["rN", "rCA", "rC", "rO"]: params[i].set(vary = True)
-    result = fit_helix(params, xyzs_dict)
+    result = fit_helix(params, xyzs_dict, lam)
     report_params_helix(params, title = f"r: " + \
                                   f"success = {result.success}, " + \
                                   f"rmsd = {calc_rmsd(result.residual)}")
     params = result.params
 
     for i in range(5):
-        result = fit_helix(params, xyzs_dict, ftol = 1e-9)
+        result = fit_helix(params, xyzs_dict, lam, ftol = 1e-9)
         report_params_helix(params, title = f"All params: " + \
                                       f"success = {result.success}, " + \
                                       f"rmsd = {calc_rmsd(result.residual)}")
