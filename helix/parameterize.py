@@ -488,7 +488,7 @@ def check_fit_purehelix(parvals, xyzs, pv0, nv0, nterm):
     gp("set view equal xyz")
     gp("set xlabel 'x'")
     gp("set ylabel 'y'")
-    gp("unset key")
+    gp("set key")
     gp(f"set arrow front from {pv0[0]},{pv0[1]},{pv0[2]}  \
                            to {pv0[0] + nv0[0]}, \
                               {pv0[1] + nv0[1]}, \
@@ -499,11 +499,11 @@ def check_fit_purehelix(parvals, xyzs, pv0, nv0, nterm):
                               {pv[1] + nv[1]}, \
                               {pv[2] + nv[2]}  \
                          linecolor rgb 'red'")
-    gp(f"splot '-' using 1:2:3   with linespoints pointtype 6, \\")
-    gp(f"      '-' using 1:2:3:4 with labels , \\")
-    gp(f"      '-' using 1:2:3   with points pointtype 6 linecolor rgb 'black', \\")
-    gp(f"      '-' using 1:2:3   with points pointtype 6 linecolor rgb 'red', \\")
-    gp(f"      '-' using 1:2:3   with linespoints pointtype 6 linecolor rgb 'green', \\")
+    gp(f"splot '-' using 1:2:3   with linespoints pointtype 6 linecolor rgb 'black' title 'data', \\")
+    gp(f"      '-' using 1:2:3:4 with labels notitle, \\")
+    gp(f"      '-' using 1:2:3   with points pointtype 6 linecolor rgb 'black'notitle, \\")
+    gp(f"      '-' using 1:2:3   with points pointtype 6 linecolor rgb 'red'notitle, \\")
+    gp(f"      '-' using 1:2:3   with linespoints pointtype 6 linecolor rgb 'red' title 'model', \\")
     gp(f"")
 
     for i, (x, y, z) in enumerate(xyzs):
