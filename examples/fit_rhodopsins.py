@@ -18,29 +18,29 @@ lines    = load_xlsx(fl_chain, sheet = "Sheet1")
 drc_pdb   = "pdb"
 
 # Define helix...
-TM_segments = { "TM1_e"   : [ 35,  50],
-                "TM1_c"   : [ 50,  62],
+TM_segments = { "TM1_e"   : [ 34,  52],
+                "TM1_c"   : [ 51,  64],
 
-                "TM2_c"   : [ 76,  85],
+                "TM2_c"   : [ 73,  85],
                 "TM2_pi"  : [ 84,  90],
                 "TM2_e"   : [ 91,  98],
 
                 "TM3_e"   : [110, 123],
-                "TM3_c"   : [123, 135],
+                "TM3_c"   : [123, 136],
 
-                "TM4_c"   : [150, 165],
-                "TM4_e"   : [165, 170],
+                "TM4_c"   : [150, 168],
+                "TM4_e"   : [168, 173],
 
-                "TM5_e"   : [201, 209],
-                "TM5_pi"  : [208, 214],
-                "TM5_c"   : [214, 227],
+                "TM5_e"   : [200, 207],
+                "TM5_pi"  : [207, 215],
+                "TM5_c"   : [216, 226],
 
-                "TM6_e"   : [243, 262],
-                "TM6_c"   : [265, 276],
+                "TM6_c"   : [243, 262],
+                "TM6_e"   : [265, 278],
 
-                "TM7_e"   : [288, 295],
-                "TM7_310" : [294, 299],
-                "TM7_c"   : [300, 306],
+                "TM7_e"   : [289, 296],
+                "TM7_310" : [294, 301],
+                "TM7_c"   : [301, 307],
                }
 
 ## for i_fl, line in enumerate(lines):
@@ -63,12 +63,12 @@ def parallel(line):
             xyzs_dict[i] = pr.atom.extract_xyz([i], atom_dict, chain, nterm, cterm)
 
         # Fitting...
-        try: result = helix.parameterize.helix(xyzs_dict)
+        try: result = helix.parameterize.helix(xyzs_dict, lam = [0.1], report = False)
         except ValueError: pass
 
         print(f"Fitting {pdb}.{chain}.{seg}: {nterm}...{cterm}")
 
-        # Fitting...
+        # Report...
         params  = result.params
         parvals = helix.parameterize.unpack_params(params)
         res     = helix.parameterize.report_result(result)
