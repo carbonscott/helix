@@ -111,40 +111,44 @@ def residual_helix(params, xyzs_dict, pa0, lam):
     parval_dict["C"]  = px, py, pz, nx, ny, nz, s, omega, rC,  phiC,  tC
     parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
 
+    # Consider residuals...
     # Create dictionary to store values
     num_dict        = {}
     xyzs_nonan_dict = {}
     res_dict        = {}
 
-    # Facilitate regularization based on pa0
-    pv  = np.array([px, py, pz], dtype = np.float64)
-
-    # Computation for each type of atom...
+    # Computation for each type of atom
     for i in xyzs_dict.keys():
         num_dict[i]  = xyzs_dict[i].shape[0]
 
         # Avoid np.nan as the first valid point
         xyzs_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)]
 
-        # Compute...
-        # Consider regularization
+        # Compute
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
               - xyzs_dict[i]
-        res  = np.abs(res)
-        res += lam[0] * np.linalg.norm( pv - pa0 ) / np.sqrt(num_dict[i])
         res_dict[i] = res
 
-    # Format results for minimization...
+    # Format results for minimization
     num_coords = np.sum( [ v for _, v in num_dict.items() ] )
     res_matrix = np.zeros( (num_coords, 3) )
 
-    # Assign values...
+    # Assign values
     idx = 0
     for i, v in res_dict.items():
         res_matrix[idx:idx + num_dict[i], :] = v
         idx += num_dict[i]
 
-    return res_matrix.reshape(-1)
+    # Consider regularization (penalty)...
+    # Facilitate regularization based on pa0
+    pv  = np.array([px, py, pz], dtype = np.float64)
+    pen_matrix = np.sqrt(lam[0]) * np.linalg.norm( pv - pa0 )
+
+    # Combine residual and penalty...
+    # [Warning!!!] It may lead to a performance hit
+    comb_matrix = np.hstack( (res_matrix.reshape(-1), pen_matrix) )
+
+    return comb_matrix.reshape(-1)
 
 
 def fit_helix(params, xyzs_dict, pa0, lam, **kwargs):
