@@ -60,7 +60,7 @@ def helixmodel(parvals, num, pt0):
     # Form a orthonormal system...
     # Direction cosine: http://www.geom.uiuc.edu/docs/reference/CRC-formulas/node52.html
     n  = np.array([nx, ny, nz], dtype = np.float64)
-    ## n /= np.linalg.norm(n)
+    n  = np.cos(n)
 
     # Derive the v, w vector (third vector) to facilitate the construction of a helix...
     v = np.cross(n, c)
@@ -131,8 +131,7 @@ def residual_helix(params, xyzs_dict, pa0, lam):
         res = helixmodel(parval_dict[i], num_dict[i], xyzs_nonan_dict[i][0]) \
               - xyzs_dict[i]
         res  = np.abs(res)
-        res += lam[0] * np.abs(nx * nx + ny * ny + nz * nz - 1) / np.sqrt(num_dict[i])
-        res += lam[1] * np.linalg.norm( pv - pa0 ) / np.sqrt(num_dict[i])
+        res += lam[0] * np.linalg.norm( pv - pa0 ) / np.sqrt(num_dict[i])
         res_dict[i] = res
 
     # Format results for minimization...
@@ -291,7 +290,12 @@ def helix(xyzs_dict, lam, report = True):
     nv_array = np.array( [ v for v in nv_dict.values() ] )
     nv = np.nanmean(nv_array, axis = 0)
     nv /= np.linalg.norm(nv)
-    nx, ny, nz = nv
+
+    # Calculate direction cosine angle
+    # nx = cos(alpha) = a1/|a|
+    # ny = cos(beta ) = a2/|a|
+    # nz = cos(gamma) = a3/|a|
+    nx, ny, nz = np.arccos(nv)
 
     # Estimate the mean position that the axis of helix passes through...
     pv_dict = {}
@@ -472,6 +476,7 @@ def check_fit_purehelix(parvals, xyzs, pv0, nv0, nterm):
     px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
     pv = np.array([px, py, pz])
     nv = np.array([nx, ny, nz])
+    nv = np.cos(nv)
 
     import GnuplotPy3
     gp = GnuplotPy3.GnuplotPy3()
@@ -553,6 +558,7 @@ def check_select_purehelix(parvals, xyzs, pv0, nv0, nterm, bindex, helixlen):
     px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
     pv = np.array([px, py, pz])
     nv = np.array([nx, ny, nz])
+    nv = np.cos(nv)
 
     import GnuplotPy3
     gp = GnuplotPy3.GnuplotPy3()
