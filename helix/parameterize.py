@@ -41,7 +41,7 @@ def estimate_axis(xyzs):
     return nv
 
 
-def helixmodel(parvals, num, pt0):
+def helixmodel(parvals, num, pt0, coreonly = False):
     ''' Return modeled coordinates (x, y, z).
         The length of the helix is represented by the num of progress.  
         pt0 is the beginning position of the helix.
@@ -74,8 +74,11 @@ def helixmodel(parvals, num, pt0):
     q += p.reshape(1, -1)
     q += n.reshape(1, -1) * s * psi_list.reshape(-1, 1) / (2 * np.pi)
     q += n.reshape(1, -1) * t
-    q += v.reshape(1, -1) * r * np.cos(psi_list.reshape(-1, 1) + phi) + \
-         w.reshape(1, -1) * r * np.sin(psi_list.reshape(-1, 1) + phi)
+
+    # Model helix with the helix core only???
+    if not coreonly:
+        q += v.reshape(1, -1) * r * np.cos(psi_list.reshape(-1, 1) + phi) + \
+             w.reshape(1, -1) * r * np.sin(psi_list.reshape(-1, 1) + phi)
 
     return q
 
