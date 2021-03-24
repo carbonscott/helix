@@ -41,7 +41,33 @@ def estimate_axis(xyzs):
     return nv
 
 
-def helixmodel(parvals, num, pt0, coreonly = False):
+def helixcore(parvals, num):
+    ''' Return modeled coordinates (x, y, z).
+        The length of the helix is represented by the num of progress.  
+        Angle related variables are all subject to the unit of radian.  
+    '''
+    # Unpack parameters...
+    px, py, pz, nx, ny, nz, s, omega, r, phi, t = parvals
+
+    # Consider phase shift...
+    psi_list = np.array([ omega * i for i in range(num) ], dtype = np.float64)
+
+    # Form a orthonormal system...
+    # Direction cosine: http://www.geom.uiuc.edu/docs/reference/CRC-formulas/node52.html
+    n  = np.array([nx, ny, nz], dtype = np.float64)
+    n  = np.cos(n)
+
+    # Model it and save result in q...
+    p  = np.array([px, py, pz], dtype = np.float64)
+    q  = np.zeros((len(psi_list), 3))
+    q += p.reshape(1, -1)
+    q += n.reshape(1, -1) * s * psi_list.reshape(-1, 1) / (2 * np.pi)
+    q += n.reshape(1, -1) * t
+
+    return q
+
+
+def helixmodel(parvals, num, pt0):
     ''' Return modeled coordinates (x, y, z).
         The length of the helix is represented by the num of progress.  
         pt0 is the beginning position of the helix.
@@ -74,11 +100,8 @@ def helixmodel(parvals, num, pt0, coreonly = False):
     q += p.reshape(1, -1)
     q += n.reshape(1, -1) * s * psi_list.reshape(-1, 1) / (2 * np.pi)
     q += n.reshape(1, -1) * t
-
-    # Model helix with the helix core only???
-    if not coreonly:
-        q += v.reshape(1, -1) * r * np.cos(psi_list.reshape(-1, 1) + phi) + \
-             w.reshape(1, -1) * r * np.sin(psi_list.reshape(-1, 1) + phi)
+    q += v.reshape(1, -1) * r * np.cos(psi_list.reshape(-1, 1) + phi) + \
+         w.reshape(1, -1) * r * np.sin(psi_list.reshape(-1, 1) + phi)
 
     return q
 
@@ -323,11 +346,6 @@ def helix(xyzs_dict, lam, report = True):
         # The projection along axis is equivalent to translation...
         pv_to_firstatom = xyzs_nonan_dict[i][0] - pv
         t[i] = np.dot( pv_to_firstatom, nv )
-    ## t = {}
-    ## t["N"] = -8.053
-    ## t["CA"] = -6.808
-    ## t["C"] = -5.338
-    ## t["O"] = -3.691
 
     # Init params...
     params = init_params()
@@ -712,25 +730,37 @@ def whole_helix(xyzs_dict, len_segment, step, nterm, cterm):
     return params_dict
 
 
-def export_params_dict(params_dict, fl_out):
-    with open(fl_out,'w') as fh:
-        for k, v in params_dict.items():
-            # Unpack values...
-            params, rmsd = v
+def export_info_helix(xyzs_dict):
+    # Create dictionary to store values
+    num_dict        = {}
+    xyzs_first_nonan_dict = {}
 
-            # Unpack parameters...
-            parvals = unpack_params(params)
+    # Computation for each type of atom
+    for i in xyzs_dict.keys():
+        num_dict[i]  = xyzs_dict[i].shape[0]
 
-            # Export...
-            fh.write(f"{k:03d}")
-            fh.write(f"{rmsd:10.5f}")
-            for parval in parvals:
-                fh.write(f"{parval:8.3f}")
-                fh.write(f"    ")
-            fh.write("\n")
+        # Avoid np.nan as the first valid point
+        xyzs_first_nonan_dict[i] = xyzs_dict[i][~np.isnan(xyzs_dict[i]).any(axis = 1)][0]
+
+    # Unpack contents...
+    xN, xCA, xC, xO = [ x for atom_type, (x, y, z) in xyzs_first_nonan_dict.items() ]
+    yN, yCA, yC, yO = [ y for atom_type, (x, y, z) in xyzs_first_nonan_dict.items() ]
+    zN, zCA, zC, zO = [ z for atom_type, (x, y, z) in xyzs_first_nonan_dict.items() ]
+    nN, nCA, nC, nO = [ n for atom_type, n in num_dict.items() ]
+
+    # Put them into a reporting list...
+    # Shady coding style, sorry
+    rep = [ f"{i:10.3f}"                \
+            for i in [ xN, xCA, xC, xO, \
+                       yN, yCA, yC, yO, \
+                       zN, zCA, zC, zO, ] ]
+    rep.extend( [ f"{i:6d}" for i in [ nN, nCA, nC, nO ] ] )
+
+    # Report the first non-nan coordinates and the number of atoms...
+    return rep
 
 
-def report_result(result, degreeQ = True):
+def export_result_fitting(result):
     # Fetch params and rmsd...
     params = result.params
     rmsd   = calc_rmsd(result.residual)
@@ -741,14 +771,6 @@ def report_result(result, degreeQ = True):
     rN, rCA, rC, rO                  = parvals[8:8+4]
     phiN, phiCA, phiC, phiO          = parvals[12:12+4]
     tN, tCA, tC, tO                  = parvals[16:16+4]
-
-    # Convert angle from radian to degree
-    if degreeQ:
-        omega = omega / np.pi * 180
-        phiN  = phiN  / np.pi * 180
-        phiCA = phiCA / np.pi * 180
-        phiC  = phiC  / np.pi * 180
-        phiO  = phiO  / np.pi * 180
 
     # Export values...
     res = [ f"{i:10.3f}" \
@@ -761,22 +783,14 @@ def report_result(result, degreeQ = True):
     return res
 
 
-def convert_to_parval_dict(parvals, degreeQ = False):
-    ''' [DEBATE] Should I consider the two senarios regarding degreeQ at all?
+def form_parval_dict(parvals):
+    ''' Convert a list of parameter values into a dictionary.  
     '''
     # Unpack parameters
     px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
     rN, rCA, rC, rO                  = parvals[8:8+4]
     phiN, phiCA, phiC, phiO          = parvals[12:12+4]
     tN, tCA, tC, tO                  = parvals[16:16+4]
-
-    # Convert angle from degree to radian
-    if not degreeQ:
-        omega = omega / 180 * np.pi
-        phiN  = phiN  / 180 * np.pi
-        phiCA = phiCA / 180 * np.pi
-        phiC  = phiC  / 180 * np.pi
-        phiO  = phiO  / 180 * np.pi
 
     # Construct paramters for each atom
     parval_dict = {}
@@ -786,3 +800,45 @@ def convert_to_parval_dict(parvals, degreeQ = False):
     parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
 
     return parval_dict
+
+
+def parse_helixparam_format(lines):
+    ''' Parse helixparam format
+        [0    ]  =>  seg
+        [1 : 4]  =>  px py pz
+        [4 : 7]  =>  nx ny nz
+        [7    ]  =>  s
+        [8    ]  =>  omega
+        [9 :13]  =>  rN rCA rC rO
+        [13:17]  =>  phiN phiCA phiC phiO
+        [17:21]  =>  tN tCA tC tO
+        [21   ]  =>  rmsd
+        [22:26]  =>  xN xCA xC xO
+        [26:30]  =>  yN yCA yC yO
+        [30:34]  =>  zN zCA zC zO
+        [34:38]  =>  nN nCA nC nO
+        [38   ]  =>  nterm
+        [39   ]  =>  cterm
+    '''
+    helixparam_dict = {}
+    for line in lines:
+        seg = line[0]
+        helixparam_dict[seg] =  { "param"     :  floats(line[1 :21]),
+                                  "rmsd"      :  float(line[21   ]),
+                                  "first_xyz" :  { "N"  : floats(line[22:31:4]),
+                                                   "CA" : floats(line[23:32:4]),
+                                                   "C"  : floats(line[24:33:4]),
+                                                   "O"  : floats(line[25:34:4]), },
+                                  "num"       :  { "N"  : int(line[34]),
+                                                   "CA" : int(line[35]),
+                                                   "C"  : int(line[36]),
+                                                   "O"  : int(line[37]), },
+                                  "nterm"     :  (line[38   ]),
+                                  "cterm"     :  (line[39   ]), }
+
+    return helixparam_dict
+
+
+def floats(line): return [ float(i) for i in line ]
+def ints(line): return [ int(i) for i in line ]
+

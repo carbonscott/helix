@@ -22,7 +22,6 @@ def measure_twocores(core_xyz_ref, core_xyz_tar):
     # Calculate the length of interhelical distance vector...
     norm_ih_dvec = np.linalg.norm(ih_dvec)
 
-
     # Obtain the helical core vectors...
     core_xyz_ref_nonan = remove_nan(core_xyz_ref)
     core_xyz_tar_nonan = remove_nan(core_xyz_tar)
@@ -35,5 +34,6 @@ def measure_twocores(core_xyz_ref, core_xyz_tar):
     ih_ang = np.arccos( np.dot(core_vec_ref_unit, core_vec_tar_unit) )
 
     return ih_dvec, norm_ih_dvec, core_vec_ref_unit, core_vec_tar_unit, ih_ang
+
 
 
