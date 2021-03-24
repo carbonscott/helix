@@ -842,3 +842,15 @@ def parse_helixparam_format(lines):
 def floats(line): return [ float(i) for i in line ]
 def ints(line): return [ int(i) for i in line ]
 
+
+def export_helixcore(result, xyzs_dict, nterm, cterm):
+    ''' Jumbo export info for reconstructing a helical core (with a bit extra
+        info).  
+
+        The only purpose of this function is to standardize the output format 
+        (in a quick and dirty way).  
+    '''
+    res  = export_result_fitting(result)
+    info = export_info_helix(xyzs_dict)
+
+    return res, info, (nterm, cterm)
