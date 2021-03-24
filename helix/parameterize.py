@@ -730,7 +730,7 @@ def export_params_dict(params_dict, fl_out):
             fh.write("\n")
 
 
-def report_result(result):
+def report_result(result, degreeQ = True):
     # Fetch params and rmsd...
     params = result.params
     rmsd   = calc_rmsd(result.residual)
@@ -743,11 +743,12 @@ def report_result(result):
     tN, tCA, tC, tO                  = parvals[16:16+4]
 
     # Convert angle from radian to degree
-    omega = omega / np.pi * 180
-    phiN  = phiN  / np.pi * 180
-    phiCA = phiCA / np.pi * 180
-    phiC  = phiC  / np.pi * 180
-    phiO  = phiO  / np.pi * 180
+    if degreeQ:
+        omega = omega / np.pi * 180
+        phiN  = phiN  / np.pi * 180
+        phiCA = phiCA / np.pi * 180
+        phiC  = phiC  / np.pi * 180
+        phiO  = phiO  / np.pi * 180
 
     # Export values...
     res = [ f"{i:10.3f}" \
@@ -758,3 +759,30 @@ def report_result(result):
                        rmsd ] ]
 
     return res
+
+
+def convert_to_parval_dict(parvals, degreeQ = False):
+    ''' [DEBATE] Should I consider the two senarios regarding degreeQ at all?
+    '''
+    # Unpack parameters
+    px, py, pz, nx, ny, nz, s, omega = parvals[ :8]
+    rN, rCA, rC, rO                  = parvals[8:8+4]
+    phiN, phiCA, phiC, phiO          = parvals[12:12+4]
+    tN, tCA, tC, tO                  = parvals[16:16+4]
+
+    # Convert angle from degree to radian
+    if not degreeQ:
+        omega = omega / 180 * np.pi
+        phiN  = phiN  / 180 * np.pi
+        phiCA = phiCA / 180 * np.pi
+        phiC  = phiC  / 180 * np.pi
+        phiO  = phiO  / 180 * np.pi
+
+    # Construct paramters for each atom
+    parval_dict = {}
+    parval_dict["N"]  = px, py, pz, nx, ny, nz, s, omega, rN,  phiN,  tN
+    parval_dict["CA"] = px, py, pz, nx, ny, nz, s, omega, rCA, phiCA, tCA
+    parval_dict["C"]  = px, py, pz, nx, ny, nz, s, omega, rC,  phiC,  tC
+    parval_dict["O"]  = px, py, pz, nx, ny, nz, s, omega, rO,  phiO,  tO
+
+    return parval_dict
