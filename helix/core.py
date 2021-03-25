@@ -51,6 +51,8 @@ def calc_interangle(core_xyz_ref, core_xyz_tar):
     core_vec_tar_unit = core_vec_tar / np.linalg.norm(core_vec_tar)
     inter_angle = np.arccos( np.dot(core_vec_ref_unit, core_vec_tar_unit) )
 
+    if inter_angle > np.pi / 2.0: inter_angle = np.pi - inter_angle
+
     return inter_angle
 
 
