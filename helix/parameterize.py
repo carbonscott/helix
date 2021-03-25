@@ -824,8 +824,18 @@ def parse_helixparam_format(lines):
     for line in lines:
         seg = line[0]
         helixparam_dict[seg] =  { "param"     :  floats(line[1 :21]),
+                                  "pitch"     :  float(line[7]),
+                                  "omega"     :  float(line[8]),
+                                  "radius"    :  { "N"  : float(line[ 9]),
+                                                   "CA" : float(line[10]),
+                                                   "C"  : float(line[11]),
+                                                   "O"  : float(line[12]), },
+                                  "phase"     :  { "N"  : float(line[13]),
+                                                   "CA" : float(line[14]),
+                                                   "C"  : float(line[15]),
+                                                   "O"  : float(line[16]), },
                                   "rmsd"      :  float(line[21   ]),
-                                  "first_xyz" :  { "N"  : floats(line[22:31:4]),
+                                  "firstatom" :  { "N"  : floats(line[22:31:4]),
                                                    "CA" : floats(line[23:32:4]),
                                                    "C"  : floats(line[24:33:4]),
                                                    "O"  : floats(line[25:34:4]), },
@@ -833,8 +843,8 @@ def parse_helixparam_format(lines):
                                                    "CA" : int(line[35]),
                                                    "C"  : int(line[36]),
                                                    "O"  : int(line[37]), },
-                                  "nterm"     :  (line[38   ]),
-                                  "cterm"     :  (line[39   ]), }
+                                  "nterm"     :  int(line[38]),
+                                  "cterm"     :  int(line[39]), }
 
     return helixparam_dict
 
