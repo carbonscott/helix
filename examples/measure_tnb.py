@@ -16,8 +16,10 @@ if False:
     pdb = "test"
     chain = "A"
     nterm = 0
-    sample_num = 100
-    parvals = [0, 0, 2, 1, 0, 1, 5.5, 10 / 180 * np.pi, 2.3, 0.0, 0.0]
+    scale = 1
+    step = 1
+    sample_num = 20
+    parvals = [0, 0, 2, 1, 0, 1, 5.5, 100 / 180 * np.pi, 2.3, 0.0, 0.0]
     xyzs = helix.parameterize.helixmodel(parvals, sample_num, [0, 0, 0])
 
     # Model...
@@ -43,8 +45,10 @@ if True:
     chain = "A"
     ## nterm = 98
     ## cterm = 108
-    nterm = 285
-    cterm = 307
+    ## nterm = 285
+    ## cterm = 307
+    nterm = 1
+    cterm = 322
     sample_scale = 10
     sample_num = (cterm - nterm + 1) * sample_scale
 
@@ -67,9 +71,18 @@ if True:
     tvec, nvec, bvec, avec, \
     curv, tor, omega = helix.tnb.measure_spline(xyzs_model)
 
-if 1:
     scale = 1
     step  = 2
+
+    # Visualize radius...
+    r  = 1.0 / curv
+    r /= 1.2294    # I need to know if 1.2294 is indeed a good ratio (obtained from an experiment)
+
+    cmds = [ "set arrow from first 2.3, graph 0 to first 2.3, graph 1 nohead dashtype 2" ]
+    pr.utils.show_population_density(r, bin_cap = 50, filename = "radius", xlabel = "Radius (\305)", rng = [0, 10], cmds = cmds)
+
+
+if 1:
     # [[[ EXPORT ]]]
     if 0:
         fl_export = f"{pdb}_{chain}.dat"
