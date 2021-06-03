@@ -44,7 +44,7 @@ def measure_spline(xyzs):
     avec  = rt * bvec[:, :-1] + rb * tvec[:, :-1]
 
     # Obtain curvature...
-    curv = norm_nvec_aux / norm_dr1
+    curv = norm_bvec_aux / norm_dr1 ** 3
 
     # Obtain torsion...
     tor_aux = np.sum(bvec_aux * dr3, axis = 0, keepdims = True)
