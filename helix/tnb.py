@@ -58,9 +58,9 @@ def measure_spline(xyzs):
     nvec_cosang[-1]  = np.nan
 
     # Calculate radius...
+    # Refer to 10.1007/s00214-009-0639-4
     denorm = curv ** 2 + tor ** 2
     radius = curv / denorm
-
 
     return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius
 
