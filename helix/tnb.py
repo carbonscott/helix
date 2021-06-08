@@ -37,7 +37,8 @@ def measure_spline(xyzs):
     norm_db = np.linalg.norm(db, axis = 0, keepdims = True)
     norm_dt = np.linalg.norm(dt, axis = 0, keepdims = True)
 
-    # Get rt and rb
+    # Get axial vector...
+    # Refer to 10.1007/s00894-013-1819-7
     db_div_dt = norm_db / norm_dt
     rt = (1 + db_div_dt)**(-2)
     rb = db_div_dt * rt
@@ -56,7 +57,12 @@ def measure_spline(xyzs):
     nvec_cosang[:-1] = np.arccos(nvec_dot)
     nvec_cosang[-1]  = np.nan
 
-    return dr1, dr2, tvec, nvec, bvec, avec, curv, tor, nvec_cosang
+    # Calculate radius...
+    denorm = curv ** 2 + tor ** 2
+    radius = curv / denorm
+
+
+    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius
 
 
 
