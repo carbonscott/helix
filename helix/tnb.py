@@ -57,12 +57,13 @@ def measure_spline(xyzs):
     nvec_cosang[:-1] = np.arccos(nvec_dot)
     nvec_cosang[-1]  = np.nan
 
-    # Calculate radius...
+    # Calculate radius and pitch...
     # Refer to 10.1007/s00214-009-0639-4
     denorm = curv ** 2 + tor ** 2
     radius = curv / denorm
+    pitch  = tor  / denorm
 
-    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius
+    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius, tor
 
 
 
@@ -73,7 +74,7 @@ def fit_spline(xyzs, s = 0, k = 3, num = 100):
         xyzs has a dimension of (3, ...).  Transpose xyzs if the dimension is
         (..., 3)
     '''
-    tck, u = splprep(xyzs, s = 0, k = 3)
+    tck, u = splprep(xyzs, s = s, k = 3)
     u_fine = np.linspace(0, 1, num)
     x, y, z = splev(u_fine, tck)
 
