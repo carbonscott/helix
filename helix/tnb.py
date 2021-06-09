@@ -63,7 +63,7 @@ def measure_spline(xyzs):
     radius = curv / denorm
     pitch  = tor  / denorm
 
-    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius, tor
+    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius, pitch
 
 
 
