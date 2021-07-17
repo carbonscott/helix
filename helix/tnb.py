@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.interpolate import splprep, splev
 
-def measure_spline(xyzs):
+def measure_spline(xyzs, offset):
     ''' Calculate curvature, torsion of a curve, and axial vector under TNB frame,
         also known as Frenet-Serret frame.  
         DOI: 10.1007/s00894-013-1819-7
@@ -63,7 +63,16 @@ def measure_spline(xyzs):
     radius = curv / denorm
     pitch  = tor  / denorm
 
-    return tvec, nvec, bvec, avec, curv, tor, nvec_cosang, radius, pitch
+    sli = slice(offset, len(xyzs[0])-offset, 1)
+    return tvec       [:, sli], \
+           nvec       [:, sli], \
+           bvec       [:, sli], \
+           avec       [:, sli], \
+           curv       [:, sli], \
+           tor        [:, sli], \
+           nvec_cosang[sli], \
+           radius     [:, sli], \
+           pitch      [:, sli]
 
 
 
