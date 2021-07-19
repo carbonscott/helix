@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.interpolate import splprep, splev
 
-def measure_spline(xyzs, offset):
+def measure_spline(xyzs, offset = 0):
     ''' Calculate curvature, torsion of a curve, and axial vector under TNB frame,
         also known as Frenet-Serret frame.  
         DOI: 10.1007/s00894-013-1819-7
