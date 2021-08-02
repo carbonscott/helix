@@ -43,16 +43,17 @@ def measure_spline(xyzs, offset = 0):
     rt = (1 + db_div_dt)**(-2)
     rb = db_div_dt * rt
     avec  = rt * bvec[:, :-1] + rb * tvec[:, :-1]
+    norm_avec = np.linalg.norm(avec, axis = 0, keepdims = True)
 
     # Obtain curvature...
     curv = norm_bvec_aux / norm_dr1 ** 3
 
     # Obtain torsion...
-    tor_aux = np.sum(bvec_aux * dr3, axis = 0, keepdims = True)
+    tor_aux = np.nansum(bvec_aux * dr3, axis = 0, keepdims = True)
     tor  = tor_aux / (norm_bvec_aux**2)
 
     # Obtain angular turn per atom...
-    nvec_dot = np.sum( nvec[:, :-1] * nvec[:,1:], axis = 0 )
+    nvec_dot = np.nansum( nvec[:, :-1] * nvec[:,1:], axis = 0 )
     nvec_cosang = np.zeros(len(nvec_dot) + 1)
     nvec_cosang[:-1] = np.arccos(nvec_dot)
     nvec_cosang[-1]  = np.nan
@@ -61,18 +62,25 @@ def measure_spline(xyzs, offset = 0):
     # Refer to 10.1007/s00214-009-0639-4
     denorm = curv ** 2 + tor ** 2
     radius = curv / denorm
-    pitch  = tor  / denorm
+    ## rise_per_res  = tor / denorm
+
+    # Calculate rise per residue...
+    dxyz = np.array(xyzs)[:, 1:] - np.array(xyzs)[:, :-1]
+    norm_dxyz = np.linalg.norm(dxyz, axis = 0, keepdims = True)
+    rise_dot = np.nansum( dxyz * avec, axis = 0 )
+    rise_cosang = rise_dot / (norm_dxyz * norm_avec)
+    rise_per_res = norm_dxyz * rise_cosang
 
     sli = slice(offset, len(xyzs[0])-offset, 1)
-    return tvec       [:, sli], \
-           nvec       [:, sli], \
-           bvec       [:, sli], \
-           avec       [:, sli], \
-           curv       [:, sli], \
-           tor        [:, sli], \
-           nvec_cosang[sli], \
-           radius     [:, sli], \
-           pitch      [:, sli]
+    return tvec        [:, sli], \
+           nvec        [:, sli], \
+           bvec        [:, sli], \
+           avec        [:, sli], \
+           curv        [:, sli], \
+           tor         [:, sli], \
+           nvec_cosang [sli], \
+           radius      [:, sli], \
+           rise_per_res[:, sli]
 
 
 
