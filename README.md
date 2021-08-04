@@ -28,7 +28,7 @@ interested in).
 ![](./examples/helix.tnb.png)
 
 
-### Helical properties derived from B-spline fitting
+### Helical properties derived from differential geometry under Frenet (TNB) frame
 
 ![](./examples/1mxr.helix.png)
 
