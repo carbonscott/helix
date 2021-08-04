@@ -43,7 +43,7 @@ A helix is parameterized as `h(t) = [x(t), y(t), z(t)]` with a parameter `t`, in
 
 A cubic spline only renders the appearance of a helix, and thereby the
 derivative of the spline curve at any point is not equivalent to the derivative
-of `h(t)`, which is fundamental not a smooth function.  
+of `h(t)`, which is fundamentally not a smooth function.  
 
 ### How does `np.gradient` work?
 
