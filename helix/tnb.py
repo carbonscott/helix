@@ -2,16 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from scipy.interpolate import splprep, splev
+from scipy.interpolate import splprep, splev, BSpline
 
 def measure_spline(xyzs, offset = 0):
-    ''' Calculate curvature, torsion of a curve, and axial vector under TNB frame,
-        also known as Frenet-Serret frame.  
+    ''' Calculate curvature, torsion of a curve, and axial vector under TNB
+        frame, also known as Frenet-Serret frame.  
         DOI: 10.1007/s00894-013-1819-7
         URL: https://janakiev.com/blog/framing-parametric-curves/
+
+        Suppose a helix is parameterized by a function h(t), in which t
+        traverses a set of integers.  So dt = 1.  Thus, np.gradient is a 
+        right way to obtain derivatives like dx/dt, dy/dt, and dz/dt.  
+        In fact, as long as it is evenly spaced by m, the gradient should
+        return the right value that is scaled by m.  
         (x..., y..., z...)
     '''
-    # Obtain the derivatives...
+    # Obtain derivatives...
     dr1 = np.gradient(xyzs, axis = 1)
     dr2 = np.gradient(dr1,  axis = 1)
     dr3 = np.gradient(dr2,  axis = 1)
@@ -92,7 +98,9 @@ def fit_spline(xyzs, s = 0, k = 3, num = 100):
         (..., 3)
     '''
     tck, u = splprep(xyzs, s = s, k = 3)
-    u_fine = np.linspace(0, 1, num)
+
+    # By default, u.min() => 0, u.max() => 1
+    u_fine = np.linspace(u.min(), u.max(), num)
     x, y, z = splev(u_fine, tck)
 
     return x, y, z
