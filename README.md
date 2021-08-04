@@ -20,8 +20,10 @@ pip install git+https://github.com/lmfit/lmfit-py.git --upgrade --user
 
 ### Visualization of a Frenet (TNB) frame on a helix
 
-The fitting gives rise to model points that are really close to the original
-data.  
+The spline curve fitting gives rise to model points that are really close to the
+original data if no stricter smoothing condition is required.  Because we assume
+there is no noise in PDB coordinates (although it depends what problems you are
+interested in).  
 
 ![](./examples/helix.tnb.png)
 
