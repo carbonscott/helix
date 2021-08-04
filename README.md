@@ -39,7 +39,7 @@ A helix is parameterized as `h(t) = [x(t), y(t), z(t)]` with a parameter `t`, in
 `t` is a bounded integer.  So a derivative like `dx/dt` can be achieved using
 `np.gradient(x)`.  
 
-### Why it's different from using derivatives of the spline?
+### Why it's different from using derivatives of a spline?
 
 A cubic spline only renders the appearance of a helix, and thereby the
 derivative of the spline curve at any point is not equivalent to the derivative
