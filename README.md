@@ -18,7 +18,7 @@ pip install git+https://github.com/lmfit/lmfit-py.git --upgrade --user
 - [Derive radius](https://link.springer.com/10.1007/s00214-009-0639-4)
 - [B-spline curve using scipy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splprep.html)
 
-### B-spline fitting results
+### Visualization of a Frenet (TNB) frame on a helix
 
 The fitting gives rise to model points that are really close to the original
 data.  
@@ -36,6 +36,12 @@ data.
 A helix is parameterized as `h(t) = [x(t), y(t), z(t)]` with a parameter `t`, in which
 `t` is a bounded integer.  So a derivative like `dx/dt` can be achieved using
 `np.gradient(x)`.  
+
+### Why it's different from using derivatives of the spline?
+
+A cubic spline only renders the appearance of a helix, and thereby the
+derivative of the spline curve at any point is not equivalent to the derivative
+of `h(t)`, which is fundamental not a smooth function.  
 
 ### How does `np.gradient` work?
 
